@@ -122,3 +122,19 @@ char *getNomeEstacao(REGISTRO *registro)
         return (registro->nomeEstacao);
     }
 }
+
+int getCodEstacao(REGISTRO *registro)
+{
+    if(registro != NULL)
+    {
+        return (registro->codEstacao);
+    }
+}
+
+int getCodProxEstacao(REGISTRO *registro)
+{
+    if(registro != NULL)
+    {
+        return (registro->codProxEstacao);
+    }
+}

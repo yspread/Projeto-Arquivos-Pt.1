@@ -15,7 +15,9 @@ void readRecords(char *arqentrada, char *arqsaida){
     char **listanomesestacoes; //vai armazenar os nomes de estacoes que ja foram registrados, a fim de não contar os repetidos
     int contanomes = 0; //conta quantos nomes diferentes tem na lista
     int nomeestacaotemp; //armazenará temporariamente o nome da estacao de um registro
-    //fazer algo semelhante pros pares
+    int *listacodestacoes, *listacodproxestacoes; //lista vai armazenar os pares de codEstacao e codProxEstacao diferentes
+    int contapares = 0; //conta quantos pares codEstacao, codProxEstaco diferentes tem na lista
+    int codestacaotemp, codproxestacaotemp;; //armazenarao temporariamente o codigo da estacao e o codigo da proxima estacao de um registro
     HEADER *header = createHeader(); //crio uma header que será preenchida conforme os registros são lidos
     REGISTRO *registrotemp; //esse registro temporário armazenará o registro que vai ser escrito no binário
     char buffer[100]; //armazenará a linha que foi lida do csv
@@ -33,10 +35,7 @@ void readRecords(char *arqentrada, char *arqsaida){
         registrotemp = recordFromCSV(buffer); //crio registro temporário com os valores presentes na linha
         writeRecordOnBin(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
         setProxRRN(header, (getProxRRN(header)+1));
-        /*AGORA VEM A MERDA
-        como caralhos lidar com o nroParesEstacoes diferentes
-        e com o nome de estacoes diferentes
-        ideia de fdp, fazer uma lista de strings e um contador*/
+        /*descubro se o nome da estacao do registro atual é novo, se for, atualizo header->nroEstacoes, contando + 1*/
         nomeestacaotemp = getNomeEstacao(registrotemp);
         if (contanomes == 0) 
         {
@@ -55,11 +54,35 @@ void readRecords(char *arqentrada, char *arqsaida){
                 contanomes++;
             }
         }
-        //agora eu tenho q fazer algo semelhante, mas para os pares
+        /*faço a mesma coisa que com o numero de com o nome da estacao, so que agora com o par (codEstacao, codProxEstacao)
+        se for um par novo, conto + 1 em header->nroParesEstacao*/
+        codestacaotemp = getCodEstacao(registrotemp);
+        codproxestacaotemp = getCodProxEstacao(registrotemp);
+        if (contapares == 0)
+        {
+            listacodestacoes[contapares] = codestacaotemp;
+            listacodproxestacoes[contapares] = codproxestacaotemp;
+            contapares++;
+        }
+        for(int i = 0; i < contapares; i++)
+        {
+            if(listacodestacoes[i] == codestacaotemp && listacodproxestacoes[i] == codproxestacaotemp) //se eu achar um par igual na lista, nao conto como par novo
+            {
+                break;
+            }
+            if (i == (contapares - 1)) //se chegou no final da lista e não achou nenhum par igual, conto++ e adiciono o par nas respectivas listas
+            {
+                listacodestacoes[contapares] = codestacaotemp;
+                listacodproxestacoes[contapares] = codproxestacaotemp;
+                contapares++;
+            }
+        }
     }
     fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
     changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
-    fwrite(header, 17, 1, arqout); //sobrescrevo a header antiga
+    setNroEstacoes(header, contanomes); //atualizo o valor de header->nroEstacoes
+    setNroParesEstacao(header, contapares); //atualizo o valor de header->nroParesEstacao
+    fwrite(header, 17, 1, arqout); //sobrescrevo a header antiga com os novos dados da header
     fclose(arqin);
     fclose(arqout);
     BinarioNaTela(arqout);
@@ -78,5 +101,4 @@ void showRecords(char *arqentrada)
         printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
     }
     fseek(arqin, 17, SEEK_SET); //ponteiro pula o cabeçalho, não será útil para a impressão dos registros
-    
 }
