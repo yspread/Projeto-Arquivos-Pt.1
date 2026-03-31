@@ -46,7 +46,7 @@ void changeHeaderStatus(HEADER *header) //muda o status do arquivo
     }
 }
 
-void setNextRRN(HEADER *header, int novoRRN)
+void setProxRRN(HEADER *header, int novoRRN)
 {
     if(header != NULL)
     {
@@ -59,5 +59,21 @@ int getProxRRN(HEADER *header)
     if (header != NULL)
     {
         return (header->proxRRN);
+    }
+}
+
+void setNroEstacoes(HEADER *header, int novovalor)
+{
+    if (header != NULL)
+    {
+        header->nroEstacoes = novovalor; //atualiza o valor do campo
+    }
+}
+
+void setNroParesEstacao(HEADER *header, int novovalor)
+{
+    if (header != NULL)
+    {
+        header->nroParesEstacao = novovalor; //atualiza o valor do campo
     }
 }

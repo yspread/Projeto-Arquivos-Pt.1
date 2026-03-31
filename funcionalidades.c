@@ -30,8 +30,8 @@ void readRecords(char *arqentrada, char *arqsaida){
     while (fgets(buffer, 100, arqin) != NULL) //enquanto não acaba o arquivo
     {
         registrotemp = recordFromCSV(buffer); //crio registro temporário com os valores presentes na linha
-        writeRecordOnFile(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
-        setNextRRN(header, (getProxRRN(header)+1));
+        writeRecordOnBin(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
+        setProxRRN(header, (getProxRRN(header)+1));
         /*AGORA VEM A MERDA
         como caralhos lidar com o nroParesEstacoes diferentes
         e com o nome de estacoes diferentes

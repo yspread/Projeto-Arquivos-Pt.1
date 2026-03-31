@@ -91,7 +91,7 @@ REGISTRO *recordFromCSV(char *buffer)
     return registro;
 }
 
-void writeRecordOnFile(REGISTRO *registro, FILE *fp) //função para se escrever um registro inteiro em um arquivo binário
+void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever um registro inteiro em um arquivo binário
 {
     //escrevo cada um dos campos no arquivo
     fwrite(&registro->removido, sizeof(char), 1,fp); //1 byte
