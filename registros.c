@@ -48,7 +48,7 @@ void deleteRegister(REGISTRO **registro)
     *registro = NULL;
 }
 
-REGISTRO *registerFromString(char *buffer)
+REGISTRO *registerFromCSV(char *buffer)
 {
     int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra;  //todos os tokens que serão obtidos com a strsep
     char *nomeEstacao, *nomeLinha, *tokenTemp;                                          //e serão utilizados na criação de um registro 
