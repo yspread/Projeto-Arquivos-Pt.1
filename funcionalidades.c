@@ -36,7 +36,6 @@ void readRecords(char *arqentrada, char *arqsaida){
         como caralhos lidar com o nroParesEstacoes diferentes
         e com o nome de estacoes diferentes
         ideia de fdp, fazer uma lista de strings e um contador*/
-
     }
     fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
     changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
