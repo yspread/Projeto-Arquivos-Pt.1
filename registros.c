@@ -21,7 +21,7 @@ typedef struct registro_{
 }REGISTRO;
 
 //todos os parâmetros serão retirados do arquivo de entrada para se criar um registro
-REGISTRO *createRegister(int codEstacao, int codLinha, int codProxEstacao, int distProxEstacao, int codLinhaIntegra, int codEstIntegra, char* nomeEstacao, char *nomeLinha)
+REGISTRO *createRecord(int codEstacao, int codLinha, int codProxEstacao, int distProxEstacao, int codLinhaIntegra, int codEstIntegra, char* nomeEstacao, char *nomeLinha)
 {
     REGISTRO *registro = (REGISTRO *)malloc(sizeof(REGISTRO)); //memória alocada dinamicamente para o registro
     if (registro != NULL)
@@ -42,13 +42,13 @@ REGISTRO *createRegister(int codEstacao, int codLinha, int codProxEstacao, int d
     return registro;
 }
 
-void deleteRegister(REGISTRO **registro)
+void deleteRecord(REGISTRO **registro)
 {
     free(*registro);
     *registro = NULL;
 }
 
-REGISTRO *registerFromCSV(char *buffer)
+REGISTRO *recordFromCSV(char *buffer)
 {
     int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra;  //todos os tokens que serão obtidos com a strsep
     char *nomeEstacao, *nomeLinha, *tokenTemp;                                          //e serão utilizados na criação de um registro 
@@ -87,11 +87,11 @@ REGISTRO *registerFromCSV(char *buffer)
     }
     else codEstIntegra = -1;
     //criação do registro usando todos os tokens coletados
-    REGISTRO *registro = createRegister(codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
+    REGISTRO *registro = createRecord(codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
     return registro;
 }
 
-void writeRegisterOnFile(REGISTRO *registro, FILE *fp) //função para se escrever um registro inteiro em um arquivo binário
+void writeRecordOnFile(REGISTRO *registro, FILE *fp) //função para se escrever um registro inteiro em um arquivo binário
 {
     //escrevo cada um dos campos no arquivo
     fwrite(&registro->removido, sizeof(char), 1,fp); //1 byte

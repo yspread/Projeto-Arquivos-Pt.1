@@ -11,7 +11,7 @@ e escreverá o cabeçalho e todos os registros de modo binário no arquivo "arqs
 Para isso, vamos ler e escrever um registro por vez
 Inicialmente um cabeçalho placeholder será escrito no binário mas posteriormente ele será
 substituido por outro com os dados finais e corretos*/
-void readRegisters(char *arqentrada, char *arqsaida){
+void readRecords(char *arqentrada, char *arqsaida){
     //char **listanomesestacoes; //vai armazenar os nomes de estacoes que ja foram registrados, a fim de não contar os repetidos
     //int contanomes = 0; //conta quantos nomes diferentes tem na lista
     //fazer algo semelhante pros pares
@@ -29,8 +29,8 @@ void readRegisters(char *arqentrada, char *arqsaida){
     fgets(buffer, 100, arqin); //primeira linha deve ser ignorada
     while (fgets(buffer, 100, arqin) != NULL) //enquanto não acaba o arquivo
     {
-        registrotemp = registerFromCSV(buffer); //crio registro temporário com os valores presentes na linha
-        writeRegisterOnFile(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
+        registrotemp = recordFromCSV(buffer); //crio registro temporário com os valores presentes na linha
+        writeRecordOnFile(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
         setNextRRN(header, (getProxRRN(header)+1));
         /*AGORA VEM A MERDA
         como caralhos lidar com o nroParesEstacoes diferentes
@@ -50,7 +50,7 @@ void readRegisters(char *arqentrada, char *arqsaida){
 /*essa função vai imprimir os campos de cada registro do arquivo binário de entrada
 "arqentrada"
 Vamos ler um registro por vez e printá-lo*/
-void showRegisters(char *arqentrada)
+void showRecords(char *arqentrada)
 {
 
     FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lindo
