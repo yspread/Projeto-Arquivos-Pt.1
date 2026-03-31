@@ -16,5 +16,9 @@
     void setNroParesEstacao(HEADER *header, int novovalor); //atualiza o valor do campo nroParesEstacao da header
 
     //funções para se acessar campos da header
+    char getStatus(HEADER *header); //retorna header->status
+    int getTopo(HEADER *header); //retorna o topo da pilha de arquivos logicamente removidos(header->topo)
     int getProxRRN(HEADER *header); //retorna o valor de header->proxRRN
+    int getNroEstacoes(HEADER *header); //retorna o valor de header->nroEstacoes
+    int getNroParesEstacao(HEADER *header); //retorna o valor header->nroParesEstacao
 #endif

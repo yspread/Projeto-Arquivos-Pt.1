@@ -30,6 +30,7 @@ void deleteHeader(HEADER **header)
     *header = NULL;
 }
 
+
 void changeHeaderStatus(HEADER *header) //muda o status do arquivo
 {
     if (header == NULL)
@@ -54,13 +55,6 @@ void setProxRRN(HEADER *header, int novoRRN)
     }
 }
 
-int getProxRRN(HEADER *header)
-{
-    if (header != NULL)
-    {
-        return (header->proxRRN);
-    }
-}
 
 void setNroEstacoes(HEADER *header, int novovalor)
 {
@@ -75,5 +69,46 @@ void setNroParesEstacao(HEADER *header, int novovalor)
     if (header != NULL)
     {
         header->nroParesEstacao = novovalor; //atualiza o valor do campo
+    }
+}
+
+
+char getStatus(HEADER *header)
+{
+    if(header != NULL)
+    {
+        return (header->status);
+    }
+}
+
+int getTopo(HEADER *header)
+{
+    if(header != NULL)
+    {
+        return (header->topo);
+    }
+}
+
+int getProxRRN(HEADER *header)
+{
+    if (header != NULL)
+    {
+        return (header->proxRRN);
+    }
+}
+
+int getNroEstacoes(HEADER *header)
+{
+    if (header != NULL)
+    {
+        return (header->nroEstacoes);
+    }
+}
+
+int getNroParesEstacao(HEADER *header)
+{
+    if(header != NULL)
+    {
+        return (header->nroParesEstacao);
     }
 }

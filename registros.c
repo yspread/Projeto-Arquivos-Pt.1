@@ -114,3 +114,11 @@ void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever 
     }
     return;
 }
+
+char *getNomeEstacao(REGISTRO *registro)
+{
+    if(registro != NULL)
+    {
+        return (registro->nomeEstacao);
+    }
+}
