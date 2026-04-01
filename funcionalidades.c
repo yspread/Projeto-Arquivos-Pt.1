@@ -136,21 +136,80 @@ void filterRecords(char *arqentrada, int n)
         return;
     }
     int m;
+    REGISTRO *registrotemp;
+    char *stringtemp;
+    char temp;
+    fseek(arqin, 17, SEEK_SET);
     char *nomeCampos, *valorCampos;
     for (int i = 0; i < n; i++)
     {
         scanf("%d", &m);
+        CRITERIOS *criterios[m];
         for (int j = 0; j < m; j++)
         {
-            scanf("%s", nomeCampos[j]);
-            scanQuoteString(valorCampos[j]);
-            searchRecords(m, nomeCampos, valorCampos);
+            scanf("%s", stringtemp);
+            setNomeCampo(criterios[j], stringtemp);
+            ScanQuoteString(stringtemp);
+            setValorCampo(criterios[j], stringtemp);
+        }
+        while(fread(&temp, sizeof(char), 1, arqin))
+        {   
+            fseek(arqin, -1, SEEK_CUR);
+            registrotemp = recordFromBin(arqin);
+            if (recordMeetsCriteria(registrotemp, m, criterios))
+            {
+                printRecord(registrotemp);
+            }
         }
     }
 }
 
-/*essa funcao vai */
+/*essa funcao vai remover um registro de acordo com uma especificação (criterio) do usuario, usando a funcionalidade 3
+os registros removidos vao compor uma pilha para guardar os endereços e colocar novos registros
+nesses endereços */
+void removeRecord(char *arqentrada, int n)  {
+    FILE *arqin = fopen(arqentrada, "rb+"); //vamos abrir o arquivo em wb para ler e escrever
+    if (arqin == NULL)
+    {
+        printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        return;
+    }
+    HEADER *headertemp = createHeader(); //vamos usar uma header temporario para guardar as infos e adiciona-las ao header principal depois
+    changeHeaderStatus(headertemp); 
+    fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
+    int antigoTopo; 
+    fread(&antigoTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
+    setTopo(headertemp, antigoTopo);
 
-void removeRecord(char *arqentrada)  {
-
+    int m;
+    char temp;
+    REGISTRO *registrotemp;
+    CRITERIOS *criterios;
+    fseek(arqin, 17, SEEK_SET);
+    for (int i=0; i< n; i++)
+    {
+        scanf("%d", &m);
+        for (int j = 0; j < m; j++)
+        {
+        }
+        while(fread(&temp, sizeof(char), 1, arqin))
+        {
+            fseek(arqin, -1, SEEK_CUR);
+            registrotemp = recordFromBin(arqin);
+            if (recordMeetsCriteria(registrotemp, m, criterios)) //verificamos se o registro bate com o criterio imposto pelo usuario
+            {
+                fseek(arqin, -80, SEEK_CUR); // se bater, entao voltamos 80 bytes (tamanho do registro) para modificar o campo "removido"
+                int byteoffset = ftell(arqin); //vamos guardar a posicao do ponteiro atual, que preenchera o campo "topo" do cabeçalho
+                setTopo(headertemp, byteoffset);//o topo do cabecalho temporario agora é o byte offset do registro removido
+                int atualRRN = (byteoffset -17)/80; 
+                setProxRRN(headertemp, atualRRN); //vamos colocar o RRN do registro removido no campo proxRRN do header temporario
+                fwrite("1", sizeof(char), 1, arqin); //escrevemos 1 onde antes estava 0, simbolizando que o arquivo foi removido
+                int rrnAntigoTopo = (getTopo(headertemp)-17)/80; //usamos isso para pegar o byte offset do topo e traduzir para um RRN
+                fwrite(&rrnAntigoTopo, sizeof(int), 1, arqin); //escrevemos no campo "proximo" do registro o RRN daquele topo
+                //ALTERAR NROESTACOES E NROPARESESTACAO
+                //FAZER FUNÇÃO PARA ISSO
+            }
+        }
+    }
+    //volta pro começo do arquivo com fseek e printa tudo q nao tiver removido
 }

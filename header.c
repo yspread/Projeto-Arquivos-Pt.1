@@ -46,6 +46,14 @@ void changeHeaderStatus(HEADER *header) //muda o status do arquivo
     }
 }
 
+void setTopo(HEADER *header, int novotopo)
+{
+    if(header != NULL)
+    {
+        header->topo = novotopo;
+    }
+}
+
 void setProxRRN(HEADER *header, int novoRRN)
 {
     if(header != NULL)

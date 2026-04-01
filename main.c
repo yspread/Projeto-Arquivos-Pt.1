@@ -22,7 +22,9 @@ int main()
             showRecords(arquivoentrada);
             break;
         case 3: //mostrar registros com filtragem por campo
-
+            int n;
+            scanf("%d", &n);
+            filterRecords(arquivoentrada, n);
             break;
         case 4: //remoção lógica
 

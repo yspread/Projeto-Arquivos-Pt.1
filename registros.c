@@ -20,6 +20,12 @@ typedef struct registro_{
     char *nomeLinha;
 }REGISTRO;
 
+//essa struct vai armazenar os critérios que devem ser cumpridos por um registro durante as buscas
+typedef struct criterios_{
+    char *nomeCampo;
+    char *valorCampo;
+}CRITERIOS;
+
 //todos os parâmetros serão retirados do arquivo de entrada para se criar um registro
 REGISTRO *createRecord(int codEstacao, int codLinha, int codProxEstacao, int distProxEstacao, int codLinhaIntegra, int codEstIntegra, char* nomeEstacao, char *nomeLinha)
 {
@@ -181,17 +187,133 @@ void printRecord(REGISTRO *registro) //essa função vai pegar um registro e imp
     else printf("%d ", registro->codLinhaIntegra);
     if (registro->codEstIntegra = -1)
     {
-        printf("NULO ");
+        printf("NULO\n");
     }
     else printf("%d\n", registro->codEstIntegra);
 }
 
-void searchRecords(int m, char *nomeCampo, char *valorCampo)
+int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
 {
     for (int i = 0; i < m; i++)
     {
-        
+        if (strcmp(criterios[i]->nomeCampo, "codEstacao"))
+        {
+            if(registro->codEstacao != atoi(criterios[i]->valorCampo))
+            {
+                return 0;
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "codLinha"))
+        {
+            if(criterios[i]->valorCampo == "NULO")
+            {
+                if(registro->codLinha != -1)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if(registro->codLinha != atoi(criterios[i]->valorCampo))
+                {
+                    return 0;
+                }
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "codProxEstacao"))
+        {
+            if(criterios[i]->valorCampo == "NULO")
+            {
+                if(registro->codProxEstacao != -1)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if(registro->codProxEstacao != atoi(criterios[i]->valorCampo))
+                {
+                    return 0;
+                }
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "distProxEstacao"))
+        {
+            if(criterios[i]->valorCampo == "NULO")
+            {
+                if(registro->distProxEstacao != -1)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if(registro->distProxEstacao != atoi(criterios[i]->valorCampo))
+                {
+                    return 0;
+                }
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "codLinhaIntegra"))
+        {
+            if(criterios[i]->valorCampo == "NULO")
+            {
+                if(registro->codLinhaIntegra != -1)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if(registro->codLinhaIntegra != atoi(criterios[i]->valorCampo))
+                {
+                    return 0;
+                }
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "codEstIntegra"))
+        {
+            if(criterios[i]->valorCampo == "NULO")
+            {
+                if(registro->codEstIntegra != -1)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if(registro->codEstIntegra != atoi(criterios[i]->valorCampo))
+                {
+                    return 0;
+                }
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "nomeEstacao"))
+        {
+            if(registro->nomeEstacao != criterios[i]->valorCampo)
+            {
+                return 0;
+            }
+        }
+        if (strcmp(criterios[i]->nomeCampo, "nomeLinha"))
+        {
+            if(criterios[i]->valorCampo == "NULO")
+            {
+                if(registro->tamNomeLinha != 0)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if(registro->nomeLinha != criterios[i]->valorCampo)
+                {
+                    return 0;
+                }
+            }
+        }
     }
+    return 1; //o registro atendeu a todos os critérios
 }
 
 char *getNomeEstacao(REGISTRO *registro)
@@ -217,3 +339,15 @@ int getCodProxEstacao(REGISTRO *registro)
         return (registro->codProxEstacao);
     }
 }
+
+//depois ver a alocação de memória dessas porras
+void setNomeCampo(CRITERIOS *criterios, char *nomeCampo)
+{
+    criterios->nomeCampo = nomeCampo;
+}
+
+void setValorCampo(CRITERIOS *criterios, char *valorCampo)
+{
+    criterios->valorCampo = valorCampo;
+}
+
