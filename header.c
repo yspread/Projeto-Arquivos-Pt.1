@@ -30,7 +30,6 @@ void deleteHeader(HEADER **header)
     *header = NULL;
 }
 
-
 void changeHeaderStatus(HEADER *header) //muda o status do arquivo
 {
     if (header == NULL)
@@ -54,7 +53,6 @@ void setProxRRN(HEADER *header, int novoRRN)
         header->proxRRN = novoRRN; //atualiza o valor do campo
     }
 }
-
 
 void setNroEstacoes(HEADER *header, int novovalor)
 {

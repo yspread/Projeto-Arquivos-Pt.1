@@ -91,6 +91,38 @@ REGISTRO *recordFromCSV(char *buffer)
     return registro;
 }
 
+REGISTRO *recordFromBin(char *arqbin)
+{
+    char removido;   
+    fread(removido, sizeof(char), 1, arqbin);
+    if (removido == '1') //registro está logicamente removido, não deve ser considerado
+    {
+        fseek(arqbin, 79, SEEK_CUR); //o ponteiro vai para o offset do próximo registro
+        return NULL;
+    }
+    else
+    {
+        int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, tamNomeEstacao, tamNomeLinha;  //todos os campos que serão lidos do registro
+        char *nomeEstacao, *nomeLinha;
+        fseek(arqbin, 4, SEEK_CUR); //ponteiro pula o campo registro->proximo
+        //leitura de todos os campos do registro
+        fread(codEstacao, sizeof(int), 1, arqbin);
+        fread(codLinha, sizeof(int), 1, arqbin);
+        fread(codProxEst, sizeof(int), 1, arqbin);
+        fread(distProxEst, sizeof(int), 1, arqbin);
+        fread(codLinhaIntegra, sizeof(int), 1, arqbin);
+        fread(codEstIntegra, sizeof(int), 1, arqbin);
+        fread(tamNomeEstacao, sizeof(int), 1, arqbin);
+        fread(nomeEstacao, tamNomeEstacao, 1, arqbin);
+        fread(tamNomeLinha, sizeof(int), 1, arqbin);
+        fread(nomeLinha, tamNomeLinha, 1, arqbin);
+        int lixo = (80 - tamNomeLinha + tamNomeEstacao + 37); //a quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
+        fseek(arqbin, lixo, SEEK_CUR); //ponteiro direcionado para o offset do proximo registro
+        REGISTRO *registro = createRecord(codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
+        return registro;
+    }
+}
+
 void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever um registro inteiro em um arquivo binário
 {
     //escrevo cada um dos campos no arquivo
@@ -113,6 +145,45 @@ void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever 
         fwrite('$', sizeof(char),1, fp); //escreve todo o lixo necessário até o final do registro
     }
     return;
+}
+
+void printRecord(REGISTRO *registro) //essa função vai pegar um registro e imprimir seus campos conforme a formatação pedida para a funcionalidade 2
+{
+    if (registro == NULL) //se o registro for NULO, nada deve ser impresso
+    {
+        return;
+    }
+    printf("%d %s ", registro->codEstacao, registro->nomeEstacao);
+    if (registro->codLinha = -1) //para os campos que não existem, deve ser printado como "NULO"
+    {
+        printf("NULO ");
+    }
+    else printf("%d ", registro->codLinha);
+    if (registro->tamNomeLinha = 0)
+    {
+        printf("NULO ");
+    }
+    else printf("%s ", registro->nomeLinha);
+    if (registro->codProxEstacao = -1)
+    {
+        printf("NULO ");
+    }
+    else printf("%d ", registro->codProxEstacao);
+    if (registro->distProxEstacao = -1)
+    {
+        printf("NULO ");
+    }
+    else printf("%d ", registro->distProxEstacao);
+    if (registro->codLinhaIntegra = -1)
+    {
+        printf("NULO ");
+    }
+    else printf("%d ", registro->codLinhaIntegra);
+    if (registro->codEstIntegra = -1)
+    {
+        printf("NULO ");
+    }
+    else printf("%d\n", registro->codEstIntegra);
 }
 
 char *getNomeEstacao(REGISTRO *registro)

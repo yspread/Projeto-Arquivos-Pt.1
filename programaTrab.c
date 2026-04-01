@@ -8,16 +8,18 @@
 int main()
 {
     int funcionalidade;
-    char *arquivo; 
+    char *arquivoentrada; 
     scanf("%d", &funcionalidade); //indica qual funcionalidade será usada
-    scanf("%s", arquivo); //indica o nome do arquivo que será usado como entrada 
+    scanf("%s", arquivoentrada); //indica o nome do arquivo que será usado como entrada 
     switch (funcionalidade)
     {
         case 1: //create table
-            
+            char *arquivosaida;
+            scanf("%s", arquivosaida); //nome do arquivo binário no qual será escrito pela função deve ser dado pelo usuário
+            readRecords(arquivoentrada, arquivosaida);
             break;
         case 2: //mostrar registros
-
+            showRecords(arquivoentrada);
             break;
         case 3: //mostrar registros com filtragem por campo
 

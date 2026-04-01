@@ -77,6 +77,11 @@ void readRecords(char *arqentrada, char *arqsaida){
                 contapares++;
             }
         }
+        if (registrotemp != NULL)
+        {
+            free(registrotemp);
+            registrotemp = NULL;
+        }
     }
     fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
     changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
@@ -94,11 +99,25 @@ void readRecords(char *arqentrada, char *arqsaida){
 Vamos ler um registro por vez e printá-lo*/
 void showRecords(char *arqentrada)
 {
-
+    char temp; //variável temporária, só serve para ser usada no fread do loop,
+    REGISTRO *registrotemp;
     FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lindo
     if (arqin == NULL)
     {
         printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
     }
     fseek(arqin, 17, SEEK_SET); //ponteiro pula o cabeçalho, não será útil para a impressão dos registros
+    while (fread(temp, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
+    {
+        fseek(arqin, -1, SEEK_CUR); //volto um byte com o ponteiro do arquivo para que os registros sejam lidos adequadamente com a função RecordFromBin
+        registrotemp = recordFromBin(arqin); //crio registro temporário com os dados retirados do arquivo binário
+        printRecord(registrotemp); //imprimo o registro se ele não tiver sido logicamente removido
+        if (registrotemp != NULL)
+        {
+            free(registrotemp);
+            registrotemp = NULL;
+        }
+    }
+    fclose(arqin);
+    return;
 }
