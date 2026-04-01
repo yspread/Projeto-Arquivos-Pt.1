@@ -186,6 +186,14 @@ void printRecord(REGISTRO *registro) //essa função vai pegar um registro e imp
     else printf("%d\n", registro->codEstIntegra);
 }
 
+void searchRecords(int m, char *nomeCampo, char *valorCampo)
+{
+    for (int i = 0; i < m; i++)
+    {
+        
+    }
+}
+
 char *getNomeEstacao(REGISTRO *registro)
 {
     if(registro != NULL)

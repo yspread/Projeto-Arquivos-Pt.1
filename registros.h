@@ -14,6 +14,7 @@
     REGISTRO *recordFromBin(char *arqbin); //le 80 bytes do arquivo binário e cria um registro com os dados recolhidos (a função verifica se o registro está logicamente removido ou não, caso sim, retorna NULL)
     void writeRecordOnBin(REGISTRO *registro, FILE *fp); //escreve todo o conteúdo do registro no arquivo binário e coloca o lixo pra completar os 80 bytes
     void printRecord(REGISTRO *registro); //função para imprimir os dados de um registro
+    void searchRecords(int m, char *nomeCampo, char *valorCampo);
 
     int getCodEstacao(REGISTRO *registro);
     int getCodProxEstacao(REGISTRO *registro);

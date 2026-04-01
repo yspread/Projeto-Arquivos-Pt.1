@@ -25,6 +25,7 @@ void readRecords(char *arqentrada, char *arqsaida){
     if (arqin == NULL)
     {
         printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        return;
     }
     FILE *arqout = fopen(arqsaida, "wb"); //abertura do arquivo de saida para escrita em binário
     changeHeaderStatus(header); //o arquivo foi aberto para escrita, status atualizado
@@ -101,10 +102,11 @@ void showRecords(char *arqentrada)
 {
     char temp; //variável temporária, só serve para ser usada no fread do loop,
     REGISTRO *registrotemp;
-    FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lindo
+    FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lido
     if (arqin == NULL)
     {
         printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        return;
     }
     fseek(arqin, 17, SEEK_SET); //ponteiro pula o cabeçalho, não será útil para a impressão dos registros
     while (fread(temp, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
@@ -120,4 +122,29 @@ void showRecords(char *arqentrada)
     }
     fclose(arqin);
     return;
+}
+
+/*essa função vai receber como parametro um arquivo binário e vai fazer n buscas
+por campo e valor do campo no arquivo. vai imprimir os resultados compatíveis
+n equivale ao número de buscas diferentes que serão feitas*/
+void filterRecords(char *arqentrada, int n)
+{
+    FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário no qual será feita a busca
+    if (arqin == NULL)
+    {
+        printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        return;
+    }
+    int m;
+    char *nomeCampos, *valorCampos;
+    for (int i = 0; i < n; i++)
+    {
+        scanf("%d", &m);
+        for (int j = 0; j < m; j++)
+        {
+            scanf("%s", nomeCampos[j]);
+            scanQuoteString(valorCampos[j]);
+            searchRecords(m, nomeCampos, valorCampos);
+        }
+    }
 }
