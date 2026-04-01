@@ -148,3 +148,9 @@ void filterRecords(char *arqentrada, int n)
         }
     }
 }
+
+/*essa funcao vai */
+
+void removeRecord(char *arqentrada)  {
+
+}
