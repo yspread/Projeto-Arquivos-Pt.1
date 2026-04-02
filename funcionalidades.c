@@ -164,6 +164,7 @@ void filterRecords(char *arqentrada, int n)
     }
 }
 
+
 /*essa funcao vai remover um registro de acordo com uma especificação (criterio) do usuario, usando a funcionalidade 3
 os registros removidos vao compor uma pilha para guardar os endereços e colocar novos registros
 nesses endereços */
@@ -177,9 +178,9 @@ void removeRecord(char *arqentrada, int n)  {
     HEADER *headertemp = createHeader(); //vamos usar uma header temporario para guardar as infos e adiciona-las ao header principal depois
     changeHeaderStatus(headertemp); 
     fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
-    int antigoTopo; 
-    fread(&antigoTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
-    setTopo(headertemp, antigoTopo);
+    int atualTopo; 
+    fread(&atualTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
+    setTopo(headertemp, atualTopo);
 
     int m;
     char temp;
@@ -192,6 +193,7 @@ void removeRecord(char *arqentrada, int n)  {
         for (int j = 0; j < m; j++)
         {
         }
+        fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
         while(fread(&temp, sizeof(char), 1, arqin))
         {
             fseek(arqin, -1, SEEK_CUR);
@@ -200,12 +202,18 @@ void removeRecord(char *arqentrada, int n)  {
             {
                 fseek(arqin, -80, SEEK_CUR); // se bater, entao voltamos 80 bytes (tamanho do registro) para modificar o campo "removido"
                 int byteoffset = ftell(arqin); //vamos guardar a posicao do ponteiro atual, que preenchera o campo "topo" do cabeçalho
+                int campoProximo; //esta variavel ira guardar o RRN que sera armazenado no campo "proximo" do registro
+                atualTopo = getTopo(headertemp);
+                if (atualTopo == -1) { //devemos tratar do caso em que este seja o primeiro registro a ser removido, pois o topo é -1 e essa posicao de byte offset nao existe
+                    campoProximo = -1; //nesse caso, o campo "proximo" sera preenchido com -1 mesmo
+                }
+                else { //caso ja hajam outros registros removidos, devemos tratar o campo "proximo" como uma espécie de "pilha de RRN dos regristros removidos"
+                    campoProximo = (atualTopo-17)/80; //pegamos o byte offset guardado no topo e traduzimos para um RRN
+                }
                 setTopo(headertemp, byteoffset);//o topo do cabecalho temporario agora é o byte offset do registro removido
-                int atualRRN = (byteoffset -17)/80; 
-                setProxRRN(headertemp, atualRRN); //vamos colocar o RRN do registro removido no campo proxRRN do header temporario
                 fwrite("1", sizeof(char), 1, arqin); //escrevemos 1 onde antes estava 0, simbolizando que o arquivo foi removido
-                int rrnAntigoTopo = (getTopo(headertemp)-17)/80; //usamos isso para pegar o byte offset do topo e traduzir para um RRN
-                fwrite(&rrnAntigoTopo, sizeof(int), 1, arqin); //escrevemos no campo "proximo" do registro o RRN daquele topo
+                fwrite(&campoProximo, sizeof(int), 1, arqin); //escrevemos no campo "proximo" do registro o RRN daquele antigo topo do header 
+                fseek(arqin, 75, SEEK_CUR); //este passo é necessario para irmos para o proximo registro; pulamos 75 bytes pois acabamos de escrever no campo "proximo", que termina no byte 4 (quinto byte)
                 //ALTERAR NROESTACOES E NROPARESESTACAO
                 //FAZER FUNÇÃO PARA ISSO
             }
