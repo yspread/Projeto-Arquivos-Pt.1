@@ -226,7 +226,8 @@ void removeRecords(char *arqentrada, int n)  {
                     campoProximo = (atualTopo-17)/80; //pegamos o byte offset guardado no topo e traduzimos para um RRN
                 }
                 setTopo(headertemp, byteoffset);//o topo do cabecalho temporario agora é o byte offset do registro removido
-                fwrite("1", sizeof(char), 1, arqin); //escrevemos 1 onde antes estava 0, simbolizando que o arquivo foi removido
+                int numUm;
+                fwrite(&numUm, sizeof(char), 1, arqin); //escrevemos 1 onde antes estava 0, simbolizando que o arquivo foi removido
                 fwrite(&campoProximo, sizeof(int), 1, arqin); //escrevemos no campo "proximo" do registro o RRN daquele antigo topo do header 
                 fseek(arqin, 75, SEEK_CUR); //este passo é necessario para irmos para o proximo registro; pulamos 75 bytes pois acabamos de escrever no campo "proximo", que termina no byte 4 (quinto byte)
                 //ALTERAR NROESTACOES E NROPARESESTACAO
@@ -266,34 +267,27 @@ void insertRecords(char *arqentrada, int n) {
     setProxRRN(headertemp, atualproxRRN);
 
     for (int i=0; i< n; i++) { //loop que escaneia e insere n vezes
-        int contBytes =0; //vamos usar essas variavel para contar os bytes (do max de 80) do registro. no fim, o restante nao preenchido
-                        // sera preenchido com $
-        int codEstacao;
-        int codLinha;
-        int codProxEstacao;
-        int distProxEstacao;
-        int codLinhaIntegra;
-        int codEstIntegra;
-        int tamNomeEstacao;
-        int tamNomeLinha;
+        char codEstacao[50];
+        char codLinha[50];
+        char codProxEstacao[50];
+        char distProxEstacao[50];
+        char codLinhaIntegra[50];
+        char codEstIntegra[50];
         char nomeEstacao[50];
         char nomeLinha[50];
-        scanf("%d", &codEstacao); //temos que fazer o scanf na ordem exemplificada nas especificacoes
-        scanf("%d", &codLinha); 
-        scanf("%d", &codProxEstacao);
-        scanf("%d", &distProxEstacao);
-        scanf("%d", &codLinhaIntegra);
-        scanf("%d", &codEstIntegra);
+        scanf("%s", &codEstacao); //temos que fazer o scanf na ordem exemplificada nas especificacoes
+        scanf("%s", &codLinha); 
+        scanf("%s", &codProxEstacao);
+        scanf("%s", &distProxEstacao);
+        scanf("%s", &codLinhaIntegra);
+        scanf("%s", &codEstIntegra);
         ScanQuoteString(nomeEstacao); //para as strings, que estao entre aspas, usamos a funcao fornecida
         ScanQuoteString(nomeLinha);
-    
-
-
-
 
         if (atualTopo == -1) { //se nao ha topo, entao nao ha registross removidos.A insercao ocorre no byte offset do proxRRN
             int byteOffSetproxRRN = atualproxRRN * 80 + 17; //devemos achar o byte offset do proxRRN para fazer a insercao
             fseek(arqin, byteOffSetproxRRN, SEEK_SET); //movemos o cursor para la
+            escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha)
 
 
             setProxRRN(headertemp, getProxRRN(headertemp) + 1); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
@@ -307,29 +301,15 @@ void insertRecords(char *arqentrada, int n) {
             int novoTopo = proxAntigoTopo * 80 + 17; //trnasformamos aquele RRN em byte offset
             setTopo(headertemp, novoTopo); //esse byte offset é o novo topo da pilha. Botamos ele no campo "topo" da header temporaria
             fseek(arqin, atualTopo, SEEK_SET); //aqui botamos o cursor no byte offset do antigo topo da pilha de removidos. É aqui que vamos escrever o novo registro
-
-            
+            escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha) 
         }
     }
+    fseek(arqin, 1, SEEK_SET); //hora de atualizar a header principal 
+    int novoTopo = getTopo(headertemp); //vamos pegar o topo da headertemp (o atual topo da pilha)
+    int novoProxRRN = getProxRRN(headertemp); //o mesmo vale para o proxRRN
+    fwrite(&novoTopo, sizeof(int), 1, arqin); //e escrever esse novo atual topo na header principal
+    fwrite(&novoProxRRN, sizeof(int), 1, arqin); //e escrever esse novo atual topo na header principal
+    deleteHeader(headertemp); //agora podemos liberar a memoria da headertemp
+    fclose(arqin);
+    BinarioNaTela(arqentrada);
 }
-
-    fwrite("0", sizeof(char), 1, arqin); //como o primeiro campo indica remocao, é inicializado com 0
-    contBytes++; //como é um char, avançamos 1 byte na contagem
-    fwrite("-1", sizeof(int), 1, arqin); //o segundo campo deve ser incializado com -1
-    contBytes += 4; //como esse campo é um int, avançamos 4 bytes
-    fwrite(&codEstacao, sizeof(int),1,arqin); //escrevemos todos os campos conforme escaneamos o input do usuario
-    fwrite(&codLinha, sizeof(int),1,arqin);
-    fwrite(&codProxEstacao, sizeof(int),1,arqin);
-    fwrite(&distProxEstacao, sizeof(int),1,arqin);
-    fwrite(&codLinhaIntegra, sizeof(int),1,arqin);
-    fwrite(&codEstIntegra, sizeof(int),1,arqin);
-    contBytes += 24; // 6 campos * 4 bytes = 24 bytes contados
-    tamNomeEstacao = strlen(nomeEstacao); //vamos pegar o tamanho do nomeEstacao e nomeLinha
-    tamNomeLinha = strlen(nomeLinha);
-    fwrite(&tamNomeEstacao, sizeof(int), 1, arqin);
-    contBytes += 4; //este campo é int
-
-
-    fwrite(&tamNomeLinha, sizeof(int), 1, arqin);
-    contBytes += 4;
-

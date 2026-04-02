@@ -360,3 +360,92 @@ void setValorCampo(CRITERIOS *criterios, char *valorCampo)
     criterios->valorCampo = valorCampo;
 }
 
+void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *codProxEstacao, char *distProxEstacao, char *codLinhaIntegra, char *codEstIntegra, char *nomeEstacao, char *nomeLinha) {
+    char zero ='0';
+    int menosUm = -1;
+    int tamNomeEstacao;
+    int tamNomeLinha;
+    int contBytes =0; //vamos usar essas variavel para contar os bytes (do max de 80) do registro. no fim, o restante nao preenchido
+                     // sera preenchido com $
+    fwrite(&zero, sizeof(char), 1, arqin); //como o primeiro campo indica remocao, é inicializado com 0
+    contBytes++; //como é um char, avançamos 1 byte na contagem
+    fwrite(&menosUm, sizeof(int), 1, arqin); //o segundo campo deve ser incializado com -1
+    contBytes += 4; //como esse campo é um int, avançamos 4 bytes
+    if (strcmp(codEstacao, "NULO") == 0) { //se o codEstacao for NULO, marcamos o campo como -1
+        fwrite(&menosUm, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        int valorEmInt = atoi(codEstacao); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+    }
+
+    if (strcmp(codLinha, "NULO") == 0) { //se o codLinha for NULO, marcamos o campo como -1
+        fwrite(&menosUm, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        int valorEmInt = atoi(codLinha); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+    }
+
+    if (strcmp(codProxEstacao, "NULO") == 0) { //se o codProxEstacao for NULO, marcamos o campo como -1
+        fwrite(&menosUm, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        int valorEmInt = atoi(codProxEstacao); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+    }
+
+    if (strcmp(distProxEstacao, "NULO") == 0) { //se o distProxEstacao for NULO, marcamos o campo como -1
+        fwrite(&menosUm, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        int valorEmInt = atoi(distProxEstacao); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+    }
+
+    if (strcmp(codLinhaIntegra, "NULO") == 0) { //se o codLinhaIntegra for NULO, marcamos o campo como -1
+        fwrite(&menosUm, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        int valorEmInt = atoi(codLinhaIntegra); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+    }
+
+    if (strcmp(codEstIntegra, "NULO") == 0) { //se o codEstIntegra for NULO, marcamos o campo como -1
+        fwrite(&menosUm, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        int valorEmInt = atoi(codEstIntegra); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+    }
+    contBytes += 24; // 6 campos * 4 bytes = 24 bytes contados. Mesmo que os registros sejam nulos, seus tamanhos ainda sao de 4 bytes
+    tamNomeEstacao = strlen(nomeEstacao); //vamos pegar o tamanho do nomeEstacao e nomeLinha
+    tamNomeLinha = strlen(nomeLinha);
+    fwrite(&tamNomeEstacao, sizeof(int), 1, arqin);
+    contBytes += 4; //este campo é int
+
+    if (strcmp(nomeEstacao, "NULO") == 0) { //se o nomeEstacao for NULO, marcamos o campo como 0
+        fwrite(&zero, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        fwrite(&nomeEstacao, sizeof(int), 1, arqin);
+    }
+    contBytes += tamNomeEstacao;  //o numero de bytes será o tamanho do nomeEstacao
+
+    fwrite(&tamNomeLinha, sizeof(int), 1, arqin);
+    contBytes += 4;     
+
+
+    if (strcmp(nomeLinha, "NULO") == 0) { //se o nomeLinha for NULO, marcamos o campo como 0
+        fwrite(&zero, sizeof(int),1,arqin);
+    }
+    else { //se nao for nulo, marcamos como o input lido
+        fwrite(&nomeLinha, sizeof(int), 1, arqin);
+    }
+    contBytes += tamNomeLinha;  //o numero de bytes será o tamanho do nomeLinha
+     char lixo = '$'; //o espaço restante, preencheremos com $
+     while (contBytes < 80) {
+        fwrite(&lixo, sizeof(char), 1, arqin);
+        contBytes++;
+     }
+}
