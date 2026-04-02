@@ -264,17 +264,20 @@ void insertRecords(char *arqentrada, int n) {
     fread(&atualproxRRN, sizeof(int), 1, arqin); //vamos fazer o mesmo com o proxRRN. No fim da função vamos botar isso tudo na header principal
     setTopo(headertemp, atualTopo);
     setProxRRN(headertemp, atualproxRRN);
-    //fazer o loop de leitura 
 
     for (int i=0; i< n; i++) { //loop que escaneia e insere n vezes
+        int contBytes =0; //vamos usar essas variavel para contar os bytes (do max de 80) do registro. no fim, o restante nao preenchido
+                        // sera preenchido com $
         int codEstacao;
         int codLinha;
         int codProxEstacao;
         int distProxEstacao;
         int codLinhaIntegra;
         int codEstIntegra;
-        char *nomeEstacao[50];
-        char *nomeLinha[50];
+        int tamNomeEstacao;
+        int tamNomeLinha;
+        char nomeEstacao[50];
+        char nomeLinha[50];
         scanf("%d", &codEstacao); //temos que fazer o scanf na ordem exemplificada nas especificacoes
         scanf("%d", &codLinha); 
         scanf("%d", &codProxEstacao);
@@ -291,7 +294,8 @@ void insertRecords(char *arqentrada, int n) {
         if (atualTopo == -1) { //se nao ha topo, entao nao ha registross removidos.A insercao ocorre no byte offset do proxRRN
             int byteOffSetproxRRN = atualproxRRN * 80 + 17; //devemos achar o byte offset do proxRRN para fazer a insercao
             fseek(arqin, byteOffSetproxRRN, SEEK_SET); //movemos o cursor para la
-            //fwrite(); 
+
+
             setProxRRN(headertemp, getProxRRN(headertemp) + 1); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
         }
         else { //se topo !=1, entao ha registros removidos. Devemos usar a pilha de registros removidos para achar esses espaços vazios e inserir ali
@@ -308,3 +312,24 @@ void insertRecords(char *arqentrada, int n) {
         }
     }
 }
+
+    fwrite("0", sizeof(char), 1, arqin); //como o primeiro campo indica remocao, é inicializado com 0
+    contBytes++; //como é um char, avançamos 1 byte na contagem
+    fwrite("-1", sizeof(int), 1, arqin); //o segundo campo deve ser incializado com -1
+    contBytes += 4; //como esse campo é um int, avançamos 4 bytes
+    fwrite(&codEstacao, sizeof(int),1,arqin); //escrevemos todos os campos conforme escaneamos o input do usuario
+    fwrite(&codLinha, sizeof(int),1,arqin);
+    fwrite(&codProxEstacao, sizeof(int),1,arqin);
+    fwrite(&distProxEstacao, sizeof(int),1,arqin);
+    fwrite(&codLinhaIntegra, sizeof(int),1,arqin);
+    fwrite(&codEstIntegra, sizeof(int),1,arqin);
+    contBytes += 24; // 6 campos * 4 bytes = 24 bytes contados
+    tamNomeEstacao = strlen(nomeEstacao); //vamos pegar o tamanho do nomeEstacao e nomeLinha
+    tamNomeLinha = strlen(nomeLinha);
+    fwrite(&tamNomeEstacao, sizeof(int), 1, arqin);
+    contBytes += 4; //este campo é int
+
+
+    fwrite(&tamNomeLinha, sizeof(int), 1, arqin);
+    contBytes += 4;
+
