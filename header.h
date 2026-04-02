@@ -6,7 +6,8 @@
     typedef struct header_ HEADER;
 
     HEADER *createHeader(); //função para criar o cabeçalho do arquivo
-    void deleteHeader(HEADER **header); //função para apagar o cabeçalho da memória
+    void deleteHeader(HEADER *header); //função para apagar o cabeçalho da memória
+    void writeHeaderOnBin(HEADER *header, FILE *arqbin); //escreve os dados de uma header em um arquivo binário
 
     //funções para alterar valores de campos da header
     void changeHeaderStatus(HEADER *header); //troca de 0 pra 1 ou de 1 pra 0 o campo status da header

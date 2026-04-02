@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "fornecidas.h"
-#include "funcionalidades.h"
+#include "funcionalidades.h"      
 
 /*
  * Você não precisa entender o código dessa função.

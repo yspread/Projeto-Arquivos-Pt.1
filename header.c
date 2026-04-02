@@ -3,7 +3,7 @@
 #include "header.h"
 
 typedef struct header_{
-    int status;
+    char status;
     int topo;
     int proxRRN;
     int nroEstacoes;
@@ -15,7 +15,7 @@ HEADER *createHeader()
     HEADER *header = (HEADER *)malloc(sizeof(HEADER));//memória alocada dinamicamente para o cabeçalho
     if (header != NULL)
     {
-        header->status = 1; //o arquivo está consistente
+        header->status = '1'; //o arquivo está consistente
         header->topo = -1; //nenhum registro localmente removido
         header->proxRRN = 0; //o proximo campo para se adicionar um registro é o campo de RRN 0
         header->nroEstacoes = 0; //nenhuma estação por enquanto
@@ -24,10 +24,24 @@ HEADER *createHeader()
     return header;
 }
 
-void deleteHeader(HEADER **header)
+void deleteHeader(HEADER *header)
 {
-    free(*header); //libero a memória alocada para o cabeçalho
-    *header = NULL;
+    free(header); //libero a memória alocada para o cabeçalho
+    header = NULL;
+}
+
+void writeHeaderOnBin(HEADER *header, FILE *arqbin)
+{
+    char status = getStatus(header);
+    int topo = getTopo(header);
+    int proxRRN = getProxRRN(header);
+    int nroEstacoes = getNroEstacoes(header);
+    int nroParesEstacao = getNroParesEstacao(header);
+    fwrite(&status, sizeof(char), 1, arqbin);
+    fwrite(&topo, sizeof(int), 1, arqbin);
+    fwrite(&proxRRN, sizeof(int), 1, arqbin);
+    fwrite(&nroEstacoes, sizeof(int), 1, arqbin);
+    fwrite(&nroParesEstacao, sizeof(int), 1, arqbin);
 }
 
 void changeHeaderStatus(HEADER *header) //muda o status do arquivo
@@ -36,13 +50,13 @@ void changeHeaderStatus(HEADER *header) //muda o status do arquivo
     {
         return;
     }
-    if (header->status == 1) //se o status for 1, muda pra 0
+    if (header->status == '1') //se o status for 1, muda pra 0
     {
-        header->status = 0;
+        header->status = '0';
     }
     else //se o status for 0, muda pra 1
     {
-        header->status = 1;
+        header->status = '1';
     }
 }
 
@@ -77,7 +91,6 @@ void setNroParesEstacao(HEADER *header, int novovalor)
         header->nroParesEstacao = novovalor; //atualiza o valor do campo
     }
 }
-
 
 char getStatus(HEADER *header)
 {

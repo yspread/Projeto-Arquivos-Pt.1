@@ -48,46 +48,48 @@ REGISTRO *createRecord(int codEstacao, int codLinha, int codProxEstacao, int dis
     return registro;
 }
 
-void deleteRecord(REGISTRO **registro)
+void deleteRecord(REGISTRO *registro)
 {
-    free(*registro);
-    *registro = NULL;
+    free(registro);
+    registro = NULL;
 }
 
 REGISTRO *recordFromCSV(char *buffer)
 {
     int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra;  //todos os tokens que serão obtidos com a strsep
-    char *nomeEstacao, *nomeLinha, *tokenTemp;                                          //e serão utilizados na criação de um registro 
+    char *nomeEstacao, *nomeLinha, *tokenTemp;                                          //e serão utilizados na criação de um registro
+
+    buffer[strcspn(buffer, "\r\n")] = '\0'; //limpa possíveis \r e \n que possam ter sido lidos
     //tokenização de acordo com a ordem dos campos no arquivo csv
     codEstacao = atoi(strsep(&buffer, ",")); //esse valor não pode ser nulo
     nomeEstacao = strsep(&buffer, ",");
     tokenTemp = strsep(&buffer, ",");
-    if (tokenTemp == NULL)
+    if (tokenTemp[0] != '\0')
     {
         codLinha = atoi(tokenTemp);
     }
     else codLinha = -1;                //no caso dos inteiros, se o campo for nulo, deve ser salvo como -1
     nomeLinha = strsep(&buffer, ","); //se for null, na criação do registro ja considerará tamNomeLinha como 0
     tokenTemp = strsep(&buffer, ",");
-    if (tokenTemp == NULL)
+    if (tokenTemp[0] != '\0')
     {
         codProxEst = atoi(tokenTemp);
     }
     else codProxEst = -1; 
     tokenTemp = strsep(&buffer, ",");
-    if (tokenTemp == NULL)
+    if (tokenTemp[0] != '\0')
     {
         distProxEst = atoi(tokenTemp);
     }
     else distProxEst = -1;
     tokenTemp = strsep(&buffer, ",");
-    if (tokenTemp == NULL)
+    if (tokenTemp[0] != '\0')
     {
         codLinhaIntegra = atoi(tokenTemp);
     }
     else codLinhaIntegra = -1;
     tokenTemp = strsep(&buffer, ",");
-    if (tokenTemp == NULL)
+    if (tokenTemp[0] != '\0')
     {
         codEstIntegra = atoi(tokenTemp);
     }
@@ -97,10 +99,10 @@ REGISTRO *recordFromCSV(char *buffer)
     return registro;
 }
 
-REGISTRO *recordFromBin(char *arqbin)
+REGISTRO *recordFromBin(FILE *arqbin)
 {
     char removido;   
-    fread(removido, sizeof(char), 1, arqbin);
+    fread(&removido, sizeof(char), 1, arqbin);
     if (removido == '1') //registro está logicamente removido, não deve ser considerado
     {
         fseek(arqbin, 79, SEEK_CUR); //o ponteiro vai para o offset do próximo registro
@@ -112,15 +114,15 @@ REGISTRO *recordFromBin(char *arqbin)
         char *nomeEstacao, *nomeLinha;
         fseek(arqbin, 4, SEEK_CUR); //ponteiro pula o campo registro->proximo
         //leitura de todos os campos do registro
-        fread(codEstacao, sizeof(int), 1, arqbin);
-        fread(codLinha, sizeof(int), 1, arqbin);
-        fread(codProxEst, sizeof(int), 1, arqbin);
-        fread(distProxEst, sizeof(int), 1, arqbin);
-        fread(codLinhaIntegra, sizeof(int), 1, arqbin);
-        fread(codEstIntegra, sizeof(int), 1, arqbin);
-        fread(tamNomeEstacao, sizeof(int), 1, arqbin);
+        fread(&codEstacao, sizeof(int), 1, arqbin);
+        fread(&codLinha, sizeof(int), 1, arqbin);
+        fread(&codProxEst, sizeof(int), 1, arqbin);
+        fread(&distProxEst, sizeof(int), 1, arqbin);
+        fread(&codLinhaIntegra, sizeof(int), 1, arqbin);
+        fread(&codEstIntegra, sizeof(int), 1, arqbin);
+        fread(&tamNomeEstacao, sizeof(int), 1, arqbin);
         fread(nomeEstacao, tamNomeEstacao, 1, arqbin);
-        fread(tamNomeLinha, sizeof(int), 1, arqbin);
+        fread(&tamNomeLinha, sizeof(int), 1, arqbin);
         fread(nomeLinha, tamNomeLinha, 1, arqbin);
         int lixo = (80 - tamNomeLinha + tamNomeEstacao + 37); //a quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
         fseek(arqbin, lixo, SEEK_CUR); //ponteiro direcionado para o offset do proximo registro
@@ -141,14 +143,21 @@ void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever 
     fwrite(&registro->codLinhaIntegra, sizeof(int), 1,fp); //4 bytes
     fwrite(&registro->codEstIntegra, sizeof(int), 1,fp); //4 bytes
     fwrite(&registro->tamNomeEstacao, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->nomeEstacao, registro->tamNomeEstacao, 1,fp); //passando o espaço desejado dessa forma, eu excluo o \0 (que não deve ser salvo)
-    fwrite(&registro->tamNomeLinha, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->tamNomeLinha, registro->tamNomeLinha, 1,fp);
-    //temos no total (37 + tamNomeLinha + tamNomeEstacao) bytes, devemos completar o que falta pra 80 bytes com lixo ("$")
-    int lixo = 80 - (37 + registro->tamNomeLinha + registro->tamNomeEstacao); 
-    for (int i = 0; i < lixo; i++)
+    if (registro->tamNomeEstacao != 0)
     {
-        fwrite('$', sizeof(char),1, fp); //escreve todo o lixo necessário até o final do registro
+        fwrite(registro->nomeEstacao, registro->tamNomeEstacao, 1,fp); //passando o espaço desejado dessa forma, eu excluo o \0 (que não deve ser salvo)
+    }
+    fwrite(&registro->tamNomeLinha, sizeof(int), 1,fp); //4 bytes
+    if (registro->tamNomeLinha != 0)
+    {
+        fwrite(registro->nomeLinha, registro->tamNomeLinha, 1,fp);
+    }
+    //temos no total (37 + tamNomeLinha + tamNomeEstacao) bytes, devemos completar o que falta pra 80 bytes com lixo ("$")
+    int qtdlixo = 80 - (37 + registro->tamNomeLinha + registro->tamNomeEstacao); 
+    char lixo = '$';
+    for (int i = 0; i < qtdlixo; i++)
+    {
+        fwrite(&lixo, sizeof(char),1, fp); //escreve todo o lixo necessário até o final do registro
     }
     return;
 }

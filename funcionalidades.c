@@ -12,26 +12,26 @@ Para isso, vamos ler e escrever um registro por vez
 Inicialmente um cabeçalho placeholder será escrito no binário mas posteriormente ele será
 substituido por outro com os dados finais e corretos*/
 void readRecords(char *arqentrada, char *arqsaida){
-    char **listanomesestacoes; //vai armazenar os nomes de estacoes que ja foram registrados, a fim de não contar os repetidos
-    int contanomes = 0; //conta quantos nomes diferentes tem na lista
-    int nomeestacaotemp; //armazenará temporariamente o nome da estacao de um registro
-    int *listacodestacoes, *listacodproxestacoes; //lista vai armazenar os pares de codEstacao e codProxEstacao diferentes
+    char *listanomesestacoes[10000]; //vai armazenar os nomes de estacoes que ja foram registrados, a fim de não contar os repetidos
+    int contanomes = 0; //conta quantos nomes diferentes tem na lista   
+    char *nomeestacaotemp; //armazenará temporariamente o nome da estacao de um registro
+    int listacodestacoes[10000], listacodproxestacoes[10000]; //lista vai armazenar os pares de codEstacao e codProxEstacao diferentes
     int contapares = 0; //conta quantos pares codEstacao, codProxEstaco diferentes tem na lista
     int codestacaotemp, codproxestacaotemp;; //armazenarao temporariamente o codigo da estacao e o codigo da proxima estacao de um registro
     HEADER *header = createHeader(); //crio uma header que será preenchida conforme os registros são lidos
     REGISTRO *registrotemp; //esse registro temporário armazenará o registro que vai ser escrito no binário
-    char buffer[100]; //armazenará a linha que foi lida do csv
+    char buffer[512]; //armazenará a linha que foi lida do csv
     FILE *arqin = fopen(arqentrada, "r"); //abertura do arquivo de entrada para leitura
     if (arqin == NULL)
     {
-        printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        printf("Falha no processamento do arquivo.");
         return;
     }
     FILE *arqout = fopen(arqsaida, "wb"); //abertura do arquivo de saida para escrita em binário
     changeHeaderStatus(header); //o arquivo foi aberto para escrita, status atualizado
-    fwrite(header, 17, 1, arqout); //escrita dos 17 bytes do cabeçalho inicial que será posteriormente sobrescrito(posso escrever a struct inteira de uma vez, visto que todos os campos tem tamanho fixo)
-    fgets(buffer, 100, arqin); //primeira linha deve ser ignorada
-    while (fgets(buffer, 100, arqin) != NULL) //enquanto não acaba o arquivo
+    writeHeaderOnBin(header, arqout); //escrita dos 17 bytes do cabeçalho inicial que será posteriormente sobrescrito(posso escrever a struct inteira de uma vez, visto que todos os campos tem tamanho fixo)
+    fgets(buffer, 512, arqin); //primeira linha deve ser ignorada
+    while (fgets(buffer, 512, arqin) != NULL) //enquanto não acaba o arquivo
     {
         registrotemp = recordFromCSV(buffer); //crio registro temporário com os valores presentes na linha
         writeRecordOnBin(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
@@ -40,58 +40,68 @@ void readRecords(char *arqentrada, char *arqsaida){
         nomeestacaotemp = getNomeEstacao(registrotemp);
         if (contanomes == 0) 
         {
-            listanomesestacoes[contanomes] = nomeestacaotemp;
+            listanomesestacoes[contanomes] = strdup(nomeestacaotemp);
             contanomes++;
         }
-        for(int i = 0; i < contanomes; i++)
-        {
-            if(listanomesestacoes[i] == nomeestacaotemp) //se eu achar algum nome igual na lista, nao conto como nome novo de estacao
-            {
-                break;
-            }
-            if(i == (contanomes - 1)) //se chegou no final da lista e não achou nenhum nome igual, eu conto++ e adiciono o novo nome na lista
-            {
-                listanomesestacoes[contanomes] = nomeestacaotemp;
-                contanomes++;
+        else
+        {   
+            for(int i = 0; i < contanomes; i++)
+            {   
+                if(strcmp(listanomesestacoes[i], nomeestacaotemp) == 0) //se eu achar algum nome igual na lista, nao conto como nome novo de estacao
+                {
+                    break;
+                }
+                if(i == (contanomes - 1)) //se chegou no final da lista e não achou nenhum nome igual, eu conto++ e adiciono o novo nome na lista
+                {
+                    listanomesestacoes[contanomes] = strdup(nomeestacaotemp);
+                    contanomes++;
+                }
             }
         }
         /*faço a mesma coisa que com o numero de com o nome da estacao, so que agora com o par (codEstacao, codProxEstacao)
         se for um par novo, conto + 1 em header->nroParesEstacao*/
         codestacaotemp = getCodEstacao(registrotemp);
         codproxestacaotemp = getCodProxEstacao(registrotemp);
-        if (contapares == 0)
+        if (contapares == 0 && codproxestacaotemp != -1) //essa estação não pode ser terminal para ser contada como par
         {
             listacodestacoes[contapares] = codestacaotemp;
             listacodproxestacoes[contapares] = codproxestacaotemp;
             contapares++;
         }
-        for(int i = 0; i < contapares; i++)
+        else
         {
-            if(listacodestacoes[i] == codestacaotemp && listacodproxestacoes[i] == codproxestacaotemp) //se eu achar um par igual na lista, nao conto como par novo
+            for(int i = 0; i < contapares; i++)
             {
-                break;
-            }
-            if (i == (contapares - 1)) //se chegou no final da lista e não achou nenhum par igual, conto++ e adiciono o par nas respectivas listas
-            {
-                listacodestacoes[contapares] = codestacaotemp;
-                listacodproxestacoes[contapares] = codproxestacaotemp;
-                contapares++;
+                if(codproxestacaotemp == -1 || ((listacodestacoes[i] == codestacaotemp && listacodproxestacoes[i] == codproxestacaotemp) || listacodestacoes[i] == codproxestacaotemp && listacodproxestacoes[i] == codestacaotemp)) //se eu achar um par igual na lista, nao conto como par (estações terminais são desconsideradas)
+                {
+                    break;
+                }
+                if (i == (contapares - 1)) //se chegou no final da lista e não achou nenhum par igual, conto++ e adiciono o par nas respectivas listas
+                {
+                    listacodestacoes[contapares] = codestacaotemp;
+                    listacodproxestacoes[contapares] = codproxestacaotemp;
+                    contapares++;
+                }
             }
         }
-        if (registrotemp != NULL)
+        deleteRecord(registrotemp);
+    }
+    if (contanomes != 0)
+    {
+        for(int i = 0; i < contanomes; i++)
         {
-            free(registrotemp);
-            registrotemp = NULL;
+            free(listanomesestacoes[i]); //libero a memória alocada as strings pela função strdup
+            listanomesestacoes[i] = NULL;
         }
     }
     fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
     changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
     setNroEstacoes(header, contanomes); //atualizo o valor de header->nroEstacoes
     setNroParesEstacao(header, contapares); //atualizo o valor de header->nroParesEstacao
-    fwrite(header, 17, 1, arqout); //sobrescrevo a header antiga com os novos dados da header
+    writeHeaderOnBin(header, arqout); //sobrescrevo a header antiga com os novos dados da header
     fclose(arqin);
     fclose(arqout);
-    BinarioNaTela(arqout);
+    BinarioNaTela(arqsaida);
     return;
 }
 
@@ -105,11 +115,11 @@ void showRecords(char *arqentrada)
     FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lido
     if (arqin == NULL)
     {
-        printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        printf("Falha no processamento do arquivo.");
         return;
     }
     fseek(arqin, 17, SEEK_SET); //ponteiro pula o cabeçalho, não será útil para a impressão dos registros
-    while (fread(temp, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
+    while (fread(&temp, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
     {
         fseek(arqin, -1, SEEK_CUR); //volto um byte com o ponteiro do arquivo para que os registros sejam lidos adequadamente com a função RecordFromBin
         registrotemp = recordFromBin(arqin); //crio registro temporário com os dados retirados do arquivo binário
@@ -132,19 +142,19 @@ void filterRecords(char *arqentrada, int n)
     FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário no qual será feita a busca
     if (arqin == NULL)
     {
-        printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        printf("Falha no processamento do arquivo.");
         return;
     }
     int m;
     REGISTRO *registrotemp;
     char *stringtemp;
     char temp;
-    fseek(arqin, 17, SEEK_SET);
+    fseek(arqin, 17, SEEK_SET); //pulo o cabeçalho
     char *nomeCampos, *valorCampos;
     for (int i = 0; i < n; i++)
     {
         scanf("%d", &m);
-        CRITERIOS *criterios[m];
+        CRITERIOS *criterios[m]; //vetor de structs que vai armazenar cada um dos critérios de busca
         for (int j = 0; j < m; j++)
         {
             scanf("%s", stringtemp);
@@ -152,11 +162,11 @@ void filterRecords(char *arqentrada, int n)
             ScanQuoteString(stringtemp);
             setValorCampo(criterios[j], stringtemp);
         }
-        while(fread(&temp, sizeof(char), 1, arqin))
+        while(fread(&temp, sizeof(char), 1, arqin)) //verifica se o arquivo não acabou ainda
         {   
             fseek(arqin, -1, SEEK_CUR);
-            registrotemp = recordFromBin(arqin);
-            if (recordMeetsCriteria(registrotemp, m, criterios))
+            registrotemp = recordFromBin(arqin);//leio um registro 
+            if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criterios))//se o registro atender aos criterios de busca e não estiver logicamente removido ele é printado
             {
                 printRecord(registrotemp);
             }
@@ -168,14 +178,14 @@ void filterRecords(char *arqentrada, int n)
 /*essa funcao vai remover um registro de acordo com uma especificação (criterio) do usuario, usando a funcionalidade 3
 os registros removidos vao compor uma pilha para guardar os endereços e colocar novos registros
 nesses endereços */
-void removeRecord(char *arqentrada, int n)  {
+void removeRecords(char *arqentrada, int n)  {
     FILE *arqin = fopen(arqentrada, "rb+"); //vamos abrir o arquivo em wb para ler e escrever
     if (arqin == NULL)
     {
-        printf("Não foi possível abrir o arquivo \"%s\"", arqentrada);
+        printf("Falha no processamento do arquivo.");
         return;
     }
-    HEADER *headertemp = createHeader(); //vamos usar uma header temporario para guardar as infos e adiciona-las ao header principal depois
+    HEADER *headertemp = createHeader(); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
     changeHeaderStatus(headertemp); 
     fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
     int atualTopo; 
@@ -184,14 +194,19 @@ void removeRecord(char *arqentrada, int n)  {
 
     int m;
     char temp;
+    char *stringtemp;
     REGISTRO *registrotemp;
-    CRITERIOS *criterios;
     fseek(arqin, 17, SEEK_SET);
     for (int i=0; i< n; i++)
     {
         scanf("%d", &m);
+        CRITERIOS *criterios[m];
         for (int j = 0; j < m; j++)
         {
+            scanf("%s", stringtemp);
+            setNomeCampo(criterios[j], stringtemp);
+            ScanQuoteString(stringtemp);
+            setValorCampo(criterios[j], stringtemp);
         }
         fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
         while(fread(&temp, sizeof(char), 1, arqin))
@@ -219,5 +234,77 @@ void removeRecord(char *arqentrada, int n)  {
             }
         }
     }
-    //volta pro começo do arquivo com fseek e printa tudo q nao tiver removido
+    fseek(arqin, 1, SEEK_SET); //hora de atualizar a header principal 
+    int novoTopo = getTopo(headertemp); //vamos pegar o topo da headertemp (o atual topo da pilha)
+    fwrite(&novoTopo, sizeof(int), 1, arqin); //e escrever esse novo atual topo na header principal
+
+    deleteHeader(headertemp); //agora podemos liberar a memoria da headertemp
+    fclose(arqin);
+    BinarioNaTela(arqentrada);
+}
+
+
+/*esta é uma função para inserir novos registros no arquivo. Basicamente vamos sempre procurar pelo
+proximo espaço vazio do arquivo: se nao há arquivos removidos ainda, esse espaço será o proxRRN do cabeçalho,
+mas se ja houverem registros removidos, devemos escrever os novos registros no espaço liberado pelos registros removidos.
+Podemos achar esses espacos por meio da pilha de registros logicamente removidos */
+void insertRecords(char *arqentrada, int n) {
+    FILE *arqin = fopen(arqentrada, "rb+"); //vamos abrir o arquivo em wb para ler e escrever
+    if (arqin == NULL)
+    {
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+    //vamos usar a mesma tecnica de header temporaria usada na funcionalidade 4 (removeRecords) para guaradar o topo e o proxRRN
+    HEADER *headertemp = createHeader(); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
+    changeHeaderStatus(headertemp); 
+    fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
+    int atualTopo, atualproxRRN; 
+    fread(&atualTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
+    fread(&atualproxRRN, sizeof(int), 1, arqin); //vamos fazer o mesmo com o proxRRN. No fim da função vamos botar isso tudo na header principal
+    setTopo(headertemp, atualTopo);
+    setProxRRN(headertemp, atualproxRRN);
+    //fazer o loop de leitura 
+
+    for (int i=0; i< n; i++) { //loop que escaneia e insere n vezes
+        int codEstacao;
+        int codLinha;
+        int codProxEstacao;
+        int distProxEstacao;
+        int codLinhaIntegra;
+        int codEstIntegra;
+        char *nomeEstacao[50];
+        char *nomeLinha[50];
+        scanf("%d", &codEstacao); //temos que fazer o scanf na ordem exemplificada nas especificacoes
+        scanf("%d", &codLinha); 
+        scanf("%d", &codProxEstacao);
+        scanf("%d", &distProxEstacao);
+        scanf("%d", &codLinhaIntegra);
+        scanf("%d", &codEstIntegra);
+        ScanQuoteString(nomeEstacao); //para as strings, que estao entre aspas, usamos a funcao fornecida
+        ScanQuoteString(nomeLinha);
+    
+
+
+
+
+        if (atualTopo == -1) { //se nao ha topo, entao nao ha registross removidos.A insercao ocorre no byte offset do proxRRN
+            int byteOffSetproxRRN = atualproxRRN * 80 + 17; //devemos achar o byte offset do proxRRN para fazer a insercao
+            fseek(arqin, byteOffSetproxRRN, SEEK_SET); //movemos o cursor para la
+            //fwrite(); 
+            setProxRRN(headertemp, getProxRRN(headertemp) + 1); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
+        }
+        else { //se topo !=1, entao ha registros removidos. Devemos usar a pilha de registros removidos para achar esses espaços vazios e inserir ali
+            //como a pilha se da pelo campo "proximo" dos registros, devemos pegar o "proximo" do topo, tornar esse proximo o novo topo e 
+            //escrever o novo registro no antigo topo
+            int proxAntigoTopo; //vamos guardar nesta variavel o campo "proximo" daquele que é o atual (mas logo será o antigo) topo da pilha de removidos
+            fseek(arqin, atualTopo+1, SEEK_SET); //movemos o cursor para a posicao do campo "proximo" do topo
+            fread(&proxAntigoTopo, sizeof(int), 1, arqin); //lemos o RRN que estava ali e guardamos na variavel proxAntigoTopo
+            int novoTopo = proxAntigoTopo * 80 + 17; //trnasformamos aquele RRN em byte offset
+            setTopo(headertemp, novoTopo); //esse byte offset é o novo topo da pilha. Botamos ele no campo "topo" da header temporaria
+            fseek(arqin, atualTopo, SEEK_SET); //aqui botamos o cursor no byte offset do antigo topo da pilha de removidos. É aqui que vamos escrever o novo registro
+
+            
+        }
+    }
 }
