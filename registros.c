@@ -428,7 +428,7 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
         fwrite(&zero, sizeof(int),1,arqin);
     }
     else { //se nao for nulo, marcamos como o input lido
-        fwrite(&nomeEstacao, sizeof(int), 1, arqin);
+        fwrite(nomeEstacao, sizeof(int), 1, arqin);
     }
     contBytes += tamNomeEstacao;  //o numero de bytes será o tamanho do nomeEstacao
 
@@ -440,7 +440,7 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
         fwrite(&zero, sizeof(int),1,arqin);
     }
     else { //se nao for nulo, marcamos como o input lido
-        fwrite(&nomeLinha, sizeof(int), 1, arqin);
+        fwrite(nomeLinha, sizeof(int), 1, arqin);
     }
     contBytes += tamNomeLinha;  //o numero de bytes será o tamanho do nomeLinha
      char lixo = '$'; //o espaço restante, preencheremos com $
