@@ -240,7 +240,7 @@ void removeRecords(char *arqentrada, int n)  {
         {
             fseek(arqin, -1, SEEK_CUR);
             registrotemp = recordFromBin(arqin);
-            if (recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
+            if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
             {
                 fseek(arqin, -80, SEEK_CUR); // se bater, entao voltamos 80 bytes (tamanho do registro) para modificar o campo "removido"
                 int byteoffset = ftell(arqin); //vamos guardar a posicao do ponteiro atual, que preenchera o campo "topo" do cabeçalho
@@ -394,7 +394,7 @@ void updateRecords(char *arqentrada, int n) {
             fseek(arqin, -1, SEEK_CUR);
             int byteOffSetRegistro = ftell(arqin); //vamos guardar este byte offset para caso este seja o registro que atualizaremos
             registrotemp = recordFromBin(arqin); //guardaremos o registro lido em registrotemp (que sera usado para ver se os criterios batem)
-            if (recordMeetsCriteria(registrotemp, m, criteriosBusca)) { //verificamos se o registro bate com o criterio imposto pelo usuario
+            if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) { //verificamos se o registro bate com o criterio imposto pelo usuario
                 atualizarCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para armazenar as atualizações no registrotemp
                 fseek(arqin, byteOffSetRegistro, SEEK_SET); //vamos mover o curso para o byte offset do registro a ser atualizado
                 writeRecordOnBin(registrotemp, arqin); //escrevemos o registro atualizado ali
