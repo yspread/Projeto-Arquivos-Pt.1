@@ -26,4 +26,6 @@
     void setNomeCampo(CRITERIOS *criterios, char *nomeCampo);
     void setValorCampo(CRITERIOS *criterios, char *valorCampo);
     void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *codProxEstacao, char *distProxEstacao, char *codLinhaIntegra, char *codEstIntegra, char *nomeEstacao, char *nomeLinha); //esta funcao vai pegar os dados do registro e inserir no arquivo (funcionalidade 5, de insercao)
-#endif
+    void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt); //funcao que pega as atualizacoes e escreve no registro
+
+    #endif

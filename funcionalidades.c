@@ -215,6 +215,8 @@ void removeRecords(char *arqentrada, int n)  {
 
     int m;
     char temp;
+    char nomecampo[256];
+    char valorcampo[256];
     char *stringtemp;
     REGISTRO *registrotemp;
     fseek(arqin, 17, SEEK_SET);
@@ -238,7 +240,7 @@ void removeRecords(char *arqentrada, int n)  {
         {
             fseek(arqin, -1, SEEK_CUR);
             registrotemp = recordFromBin(arqin);
-            if (recordMeetsCriteria(registrotemp, m, criterios)) //verificamos se o registro bate com o criterio imposto pelo usuario
+            if (recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
             {
                 fseek(arqin, -80, SEEK_CUR); // se bater, entao voltamos 80 bytes (tamanho do registro) para modificar o campo "removido"
                 int byteoffset = ftell(arqin); //vamos guardar a posicao do ponteiro atual, que preenchera o campo "topo" do cabeçalho
@@ -347,6 +349,7 @@ void updateRecords(char *arqentrada, int n) {
         printf("Falha no processamento do arquivo.");
         return;
     }
+    fwrite("1", sizeof(char),1,arqin);
     int m;
     char nomecampo[256];
     char valorcampo[256];
@@ -391,13 +394,14 @@ void updateRecords(char *arqentrada, int n) {
             int byteOffSetRegistro = ftell(arqin); //vamos guardar este byte offset para caso este seja o registro que atualizaremos
             registrotemp = recordFromBin(arqin); //guardaremos o registro lido em registrotemp (que sera usado para ver se os criterios batem)
             if (recordMeetsCriteria(registrotemp, m, criteriosBusca)) { //verificamos se o registro bate com o criterio imposto pelo usuario
-                atualizaCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para atualizar os campos do registro
-                fseek(arqin, byteOffSetRegistro, SEEK_SET);
-                writeRecordOnBin(registrotemp, arqin);
-
-
+                atualizarCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para armazenar as atualizações no registrotemp
+                fseek(arqin, byteOffSetRegistro, SEEK_SET); //vamos mover o curso para o byte offset do registro a ser atualizado
+                writeRecordOnBin(registrotemp, arqin); //escrevemos o registro atualizado ali
             }
-
+            if (registrotemp != NULL) //desaloco a memória alocada para o registro temporário
+            {
+                deleteRecord(registrotemp);
+            }
         }
         for (int j = 0; j < m; j++) { //vamos liberar a memoria dos criterios antes da proxima volta do loop
             deleteCriteria(criteriosBusca[j]); 
@@ -405,6 +409,7 @@ void updateRecords(char *arqentrada, int n) {
         for (int j = 0; j < atts; j++) {
             deleteCriteria(criteriosAtt[j]);
         }
-        fclose(arqin);
     }
+    fclose(arqin);
+    BinarioNaTela(arqentrada);
 }
