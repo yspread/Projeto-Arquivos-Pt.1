@@ -550,42 +550,42 @@ void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criterios
         
         } 
         else if (strcmp(campo, "codLinha") == 0) {
-             if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+             if (strcmp(valor, "NULO") == 0) {
                 registro->codLinha = -1;
             }
-            else {          //se nao, inserimos o valor em int (atoi)
+            else {         
                 registro->codLinha = atoi(valor);
             }
         } 
         else if (strcmp(campo, "codProxEstacao") == 0) {
-             if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+             if (strcmp(valor, "NULO") == 0) {
                 registro->codProxEstacao = -1;
             }
-            else {          //se nao, inserimos o valor em int (atoi)
+            else {   
                 registro->codProxEstacao = atoi(valor);
             }
         } 
         else if (strcmp(campo, "distProxEstacao") == 0) {
-            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+            if (strcmp(valor, "NULO") == 0) {
                 registro->distProxEstacao = -1;
             }
-            else {          //se nao, inserimos o valor em int (atoi)
+            else {          
                 registro->distProxEstacao = atoi(valor);
             }
         } 
         else if (strcmp(campo, "codLinhaIntegra") == 0) {
-            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+            if (strcmp(valor, "NULO") == 0) {
                 registro->codLinhaIntegra = -1;
             }
-            else {          //se nao, inserimos o valor em int (atoi)
+            else {        
                 registro->codLinhaIntegra = atoi(valor);
             }
         } 
         else if (strcmp(campo, "codEstIntegra") == 0) {
-            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+            if (strcmp(valor, "NULO") == 0) {
                 registro->codEstIntegra = -1;
             }
-            else {          //se nao, inserimos o valor em int (atoi)
+            else {          
                 registro->codEstIntegra = atoi(valor);
             }
         }
@@ -597,4 +597,3 @@ void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criterios
 
 
 
-}
