@@ -169,32 +169,32 @@ void printRecord(REGISTRO *registro) //essa função vai pegar um registro e imp
         return;
     }
     printf("%d %s ", registro->codEstacao, registro->nomeEstacao);
-    if (registro->codLinha = -1) //para os campos que não existem, deve ser printado como "NULO"
+    if (registro->codLinha == -1) //para os campos que não existem, deve ser printado como "NULO"
     {
         printf("NULO ");
     }
     else printf("%d ", registro->codLinha);
-    if (registro->tamNomeLinha = 0)
+    if (registro->tamNomeLinha == 0)
     {
         printf("NULO ");
     }
     else printf("%s ", registro->nomeLinha);
-    if (registro->codProxEstacao = -1)
+    if (registro->codProxEstacao == -1)
     {
         printf("NULO ");
     }
     else printf("%d ", registro->codProxEstacao);
-    if (registro->distProxEstacao = -1)
+    if (registro->distProxEstacao == -1)
     {
         printf("NULO ");
     }
     else printf("%d ", registro->distProxEstacao);
-    if (registro->codLinhaIntegra = -1)
+    if (registro->codLinhaIntegra == -1)
     {
         printf("NULO ");
     }
     else printf("%d ", registro->codLinhaIntegra);
-    if (registro->codEstIntegra = -1)
+    if (registro->codEstIntegra == -1)
     {
         printf("NULO\n");
     }

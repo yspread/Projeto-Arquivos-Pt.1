@@ -313,3 +313,44 @@ void insertRecords(char *arqentrada, int n) {
     fclose(arqin);
     BinarioNaTela(arqentrada);
 }
+
+
+/*esta é uma função para atualizar um registro sem apaga-lo*/
+void updateRecords(char *arqentrada, int n) {
+    FILE *arqin = fopen(arqentrada, "rb+"); //vamos abrir o arquivo em wb para ler e escrever
+    if (arqin == NULL)
+    {
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+    int m;
+    char temp;
+    char *stringtemp;
+    REGISTRO *registrotemp;
+    fseek(arqin, 17, SEEK_SET);
+    for (int i=0; i< n; i++)
+    {
+        scanf("%d", &m);
+        CRITERIOS *criterios[m];
+        for (int j = 0; j < m; j++)
+        {
+            scanf("%s", stringtemp);
+            setNomeCampo(criterios[j], stringtemp);
+            ScanQuoteString(stringtemp);
+            setValorCampo(criterios[j], stringtemp);
+        }
+        fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
+        while(fread(&temp, sizeof(char), 1, arqin))
+        {
+            fseek(arqin, -1, SEEK_CUR);
+            registrotemp = recordFromBin(arqin);
+            if (recordMeetsCriteria(registrotemp, m, criterios)) { //verificamos se o registro bate com o criterio imposto pelo usuario
+                
+
+
+
+
+
+            }
+
+}
