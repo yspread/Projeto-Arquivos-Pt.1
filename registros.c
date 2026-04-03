@@ -18,7 +18,7 @@ typedef struct registro_{
     char *nomeEstacao;
     int tamNomeLinha;
     char *nomeLinha;
-}REGISTRO;
+} REGISTRO;
 
 //essa struct vai armazenar os critérios que devem ser cumpridos por um registro durante as buscas
 typedef struct criterios_{
@@ -41,17 +41,59 @@ REGISTRO *createRecord(int codEstacao, int codLinha, int codProxEstacao, int dis
         registro->codLinhaIntegra = codLinhaIntegra;
         registro->codEstIntegra = codEstIntegra;
         registro->tamNomeEstacao = strlen(nomeEstacao);
-        registro->nomeEstacao = nomeEstacao;
+        registro->nomeEstacao = malloc(registro->tamNomeEstacao + 1);
+        strcpy(registro->nomeEstacao, nomeEstacao);
         registro->tamNomeLinha = strlen(nomeLinha);
-        registro->nomeLinha = nomeLinha;
+        if (registro->tamNomeLinha != 0) //em caso do campo nomeLinha ser nulo, não devemos alocar memória
+        {
+            registro->nomeLinha = malloc(registro->tamNomeLinha + 1);
+        }
+        strcpy(registro->nomeLinha, nomeLinha);
     }
     return registro;
 }
 
 void deleteRecord(REGISTRO *registro)
 {
+    if (registro->tamNomeLinha != 0)
+    {
+        free(registro->nomeLinha);
+        (registro->nomeLinha) = NULL;
+    }
+    free(registro->nomeEstacao);
+    (registro->nomeEstacao) = NULL;
     free(registro);
     registro = NULL;
+}
+
+CRITERIOS *createCriteria(char *nomeCampo, char *valorCampo)
+{
+    CRITERIOS *criterios = malloc(sizeof(CRITERIOS));
+    if (criterios != NULL)
+    {
+        criterios->nomeCampo = malloc(strlen(nomeCampo)+1);
+        strcpy(criterios->nomeCampo, nomeCampo);
+        criterios->valorCampo = malloc(strlen(valorCampo)+1);
+        strcpy(criterios->valorCampo, valorCampo);
+        return criterios;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+void deleteCriteria(CRITERIOS *criterios)
+{
+    if(criterios != NULL)
+    {
+        free(criterios->nomeCampo);
+        criterios->nomeCampo = NULL;
+        free(criterios->valorCampo);
+        criterios->valorCampo = NULL;
+    }
+    free(criterios);
+    criterios = NULL;
 }
 
 REGISTRO *recordFromCSV(char *buffer)
@@ -111,7 +153,6 @@ REGISTRO *recordFromBin(FILE *arqbin)
     else
     {
         int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, tamNomeEstacao, tamNomeLinha;  //todos os campos que serão lidos do registro
-        char *nomeEstacao, *nomeLinha;
         fseek(arqbin, 4, SEEK_CUR); //ponteiro pula o campo registro->proximo
         //leitura de todos os campos do registro
         fread(&codEstacao, sizeof(int), 1, arqbin);
@@ -121,12 +162,18 @@ REGISTRO *recordFromBin(FILE *arqbin)
         fread(&codLinhaIntegra, sizeof(int), 1, arqbin);
         fread(&codEstIntegra, sizeof(int), 1, arqbin);
         fread(&tamNomeEstacao, sizeof(int), 1, arqbin);
+        char *nomeEstacao = malloc(tamNomeEstacao + 1); //é necessário alocar com +1 para poder colocar o '\0' que não foi salvo
         fread(nomeEstacao, tamNomeEstacao, 1, arqbin);
         fread(&tamNomeLinha, sizeof(int), 1, arqbin);
+        char *nomeLinha = malloc(tamNomeLinha + 1);
         fread(nomeLinha, tamNomeLinha, 1, arqbin);
-        int lixo = (80 - tamNomeLinha + tamNomeEstacao + 37); //a quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
+        nomeEstacao[tamNomeEstacao] = '\0';
+        nomeLinha[tamNomeLinha] = '\0';
+        int lixo = 80 - (tamNomeLinha + tamNomeEstacao + 37); //a quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
         fseek(arqbin, lixo, SEEK_CUR); //ponteiro direcionado para o offset do proximo registro
         REGISTRO *registro = createRecord(codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
+        free(nomeEstacao);
+        free(nomeLinha);
         return registro;
     }
 }
@@ -205,16 +252,16 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
 {
     for (int i = 0; i < m; i++)
     {
-        if (strcmp(criterios[i]->nomeCampo, "codEstacao"))
+        if (strcmp(criterios[i]->nomeCampo, "codEstacao") == 0)
         {
             if(registro->codEstacao != atoi(criterios[i]->valorCampo))
             {
                 return 0;
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codLinha"))
+        if (strcmp(criterios[i]->nomeCampo, "codLinha") == 0)
         {
-            if(criterios[i]->valorCampo == "NULO")
+            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
             {
                 if(registro->codLinha != -1)
                 {
@@ -229,9 +276,9 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codProxEstacao"))
+        if (strcmp(criterios[i]->nomeCampo, "codProxEstacao") == 0)
         {
-            if(criterios[i]->valorCampo == "NULO")
+            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
             {
                 if(registro->codProxEstacao != -1)
                 {
@@ -246,9 +293,9 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "distProxEstacao"))
+        if (strcmp(criterios[i]->nomeCampo, "distProxEstacao") == 0)
         {
-            if(criterios[i]->valorCampo == "NULO")
+            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
             {
                 if(registro->distProxEstacao != -1)
                 {
@@ -263,9 +310,9 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codLinhaIntegra"))
+        if (strcmp(criterios[i]->nomeCampo, "codLinhaIntegra") == 0)
         {
-            if(criterios[i]->valorCampo == "NULO")
+            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
             {
                 if(registro->codLinhaIntegra != -1)
                 {
@@ -280,9 +327,9 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codEstIntegra"))
+        if (strcmp(criterios[i]->nomeCampo, "codEstIntegra") == 0)
         {
-            if(criterios[i]->valorCampo == "NULO")
+            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
             {
                 if(registro->codEstIntegra != -1)
                 {
@@ -297,16 +344,16 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "nomeEstacao"))
+        if (strcmp(criterios[i]->nomeCampo, "nomeEstacao") == 0)
         {
-            if(registro->nomeEstacao != criterios[i]->valorCampo)
+            if(strcmp(registro->nomeEstacao,criterios[i]->valorCampo) != 0)
             {
                 return 0;
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "nomeLinha"))
+        if (strcmp(criterios[i]->nomeCampo, "nomeLinha") == 0)
         {
-            if(criterios[i]->valorCampo == "NULO")
+            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
             {
                 if(registro->tamNomeLinha != 0)
                 {
@@ -315,7 +362,7 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
             }
             else
             {
-                if(registro->nomeLinha != criterios[i]->valorCampo)
+                if(strcmp(registro->nomeLinha, criterios[i]->valorCampo) != 0)
                 {
                     return 0;
                 }
@@ -349,15 +396,14 @@ int getCodProxEstacao(REGISTRO *registro)
     }
 }
 
-//depois ver a alocação de memória dessas porras
 void setNomeCampo(CRITERIOS *criterios, char *nomeCampo)
 {
-    criterios->nomeCampo = nomeCampo;
+    strcpy(criterios->nomeCampo, nomeCampo);
 }
 
 void setValorCampo(CRITERIOS *criterios, char *valorCampo)
 {
-    criterios->valorCampo = valorCampo;
+    strcpy(criterios->valorCampo, valorCampo);
 }
 
 void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *codProxEstacao, char *distProxEstacao, char *codLinhaIntegra, char *codEstIntegra, char *nomeEstacao, char *nomeLinha) {
@@ -395,26 +441,32 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
         fwrite(&valorEmInt, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(distProxEstacao, "NULO") == 0) { //se o distProxEstacao for NULO, marcamos o campo como -1
+    if (strcmp(distProxEstacao, "NULO") == 0) 
+    { //se o distProxEstacao for NULO, marcamos o campo como -1
         fwrite(&menosUm, sizeof(int),1,arqin);
     }
-    else { //se nao for nulo, marcamos como o input lido
+    else 
+    { //se nao for nulo, marcamos como o input lido
         int valorEmInt = atoi(distProxEstacao); //usamos isso para transformar o numero lido como string em int
         fwrite(&valorEmInt, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(codLinhaIntegra, "NULO") == 0) { //se o codLinhaIntegra for NULO, marcamos o campo como -1
+    if (strcmp(codLinhaIntegra, "NULO") == 0) 
+    { //se o codLinhaIntegra for NULO, marcamos o campo como -1
         fwrite(&menosUm, sizeof(int),1,arqin);
     }
-    else { //se nao for nulo, marcamos como o input lido
+    else 
+    { //se nao for nulo, marcamos como o input lido
         int valorEmInt = atoi(codLinhaIntegra); //usamos isso para transformar o numero lido como string em int
         fwrite(&valorEmInt, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(codEstIntegra, "NULO") == 0) { //se o codEstIntegra for NULO, marcamos o campo como -1
+    if (strcmp(codEstIntegra, "NULO") == 0) 
+    { //se o codEstIntegra for NULO, marcamos o campo como -1
         fwrite(&menosUm, sizeof(int),1,arqin);
     }
-    else { //se nao for nulo, marcamos como o input lido
+    else 
+    { //se nao for nulo, marcamos como o input lido
         int valorEmInt = atoi(codEstIntegra); //usamos isso para transformar o numero lido como string em int
         fwrite(&valorEmInt, sizeof(int), 1, arqin);
     }
@@ -424,10 +476,12 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
     fwrite(&tamNomeEstacao, sizeof(int), 1, arqin);
     contBytes += 4; //este campo é int
 
-    if (strcmp(nomeEstacao, "NULO") == 0) { //se o nomeEstacao for NULO, marcamos o campo como 0
+    if (strcmp(nomeEstacao, "NULO") == 0) 
+    { //se o nomeEstacao for NULO, marcamos o campo como 0
         fwrite(&zero, sizeof(int),1,arqin);
     }
-    else { //se nao for nulo, marcamos como o input lido
+    else 
+    { //se nao for nulo, marcamos como o input lido
         fwrite(nomeEstacao, sizeof(int), 1, arqin);
     }
     contBytes += tamNomeEstacao;  //o numero de bytes será o tamanho do nomeEstacao
@@ -436,16 +490,19 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
     contBytes += 4;     
 
 
-    if (strcmp(nomeLinha, "NULO") == 0) { //se o nomeLinha for NULO, marcamos o campo como 0
+    if (strcmp(nomeLinha, "NULO") == 0) 
+    { //se o nomeLinha for NULO, marcamos o campo como 0
         fwrite(&zero, sizeof(int),1,arqin);
     }
-    else { //se nao for nulo, marcamos como o input lido
+    else 
+    { //se nao for nulo, marcamos como o input lido
         fwrite(nomeLinha, sizeof(int), 1, arqin);
     }
     contBytes += tamNomeLinha;  //o numero de bytes será o tamanho do nomeLinha
-     char lixo = '$'; //o espaço restante, preencheremos com $
-     while (contBytes < 80) {
+    char lixo = '$'; //o espaço restante, preencheremos com $
+    while (contBytes < 80)
+    {
         fwrite(&lixo, sizeof(char), 1, arqin);
         contBytes++;
-     }
+    }
 }
