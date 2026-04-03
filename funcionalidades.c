@@ -221,13 +221,17 @@ void removeRecords(char *arqentrada, int n)  {
     for (int i=0; i< n; i++)
     {
         scanf("%d", &m);
-        CRITERIOS *criterios[m];
+        CRITERIOS *criteriosBusca[m];
         for (int j = 0; j < m; j++)
         {
-            scanf("%s", stringtemp);
-            setNomeCampo(criterios[j], stringtemp);
-            ScanQuoteString(stringtemp);
-            setValorCampo(criterios[j], stringtemp);
+            scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
+            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
+                ScanQuoteString(valorcampo);
+            }
+            else { //se nao for, nao está entre aspas e usamos scanf normal
+                scanf("%s", valorcampo);
+            }
+            criteriosBusca[j] = createCriteria(nomecampo, valorcampo);
         }
         fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
         while(fread(&temp, sizeof(char), 1, arqin))
@@ -334,7 +338,8 @@ void insertRecords(char *arqentrada, int n) {
     BinarioNaTela(arqentrada);
 }
 
-/*esta é uma função para atualizar um registro sem apaga-lo*/
+
+/*esta é uma função para atualizar um registro, caso ele exista segundo criterios definidos pelo usuario*/
 void updateRecords(char *arqentrada, int n) {
     FILE *arqin = fopen(arqentrada, "rb+"); //vamos abrir o arquivo em wb para ler e escrever
     if (arqin == NULL)
@@ -343,6 +348,8 @@ void updateRecords(char *arqentrada, int n) {
         return;
     }
     int m;
+    char nomecampo[256];
+    char valorcampo[256];
     char temp;
     char *stringtemp;
     REGISTRO *registrotemp;
@@ -350,35 +357,54 @@ void updateRecords(char *arqentrada, int n) {
     for (int i=0; i< n; i++)
     {
         scanf("%d", &m);
-        CRITERIOS *criterios[m];
+        CRITERIOS *criteriosBusca[m]; 
         for (int j = 0; j < m; j++)
         {
-            scanf("%s", stringtemp);
-            setNomeCampo(criterios[j], stringtemp);
-            ScanQuoteString(stringtemp);
-            setValorCampo(criterios[j], stringtemp);
+            scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
+            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
+                ScanQuoteString(valorcampo);
+            }
+            else { //se nao for, nao está entre aspas e usamos scanf normal
+                scanf("%s", valorcampo);
+            }
+            criteriosBusca[j] = createCriteria(nomecampo, valorcampo);
         }
+        int atts; //numero de atualizacoes para aquela linha (o "p" no exemplo do pdf)
+        scanf("%d", &atts);  
+        CRITERIOS *criteriosAtt[atts]; //vamos guardar as atualizacoes aqui
+        for (int j = 0; j < atts; j++)  //vamos guardar uma atualizacao para cada att (numero de atualizacoes)
+        {
+            scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
+            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
+                ScanQuoteString(valorcampo);
+            }
+            else { //se nao for, nao está entre aspas e usamos scanf normal
+                scanf("%s", valorcampo);
+            }
+            criteriosAtt[j] = createCriteria(nomecampo, valorcampo);
+        }
+
         fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
         while(fread(&temp, sizeof(char), 1, arqin))
         {
             fseek(arqin, -1, SEEK_CUR);
-            registrotemp = recordFromBin(arqin);
-            if (recordMeetsCriteria(registrotemp, m, criterios)) { //verificamos se o registro bate com o criterio imposto pelo usuario
-                int atts; //numero de atualizacoes para aquela linha
-                scanf("%d", &atts);  
-                for (int i=0; i < atts; i++) { //esse loop vai acontecer para o numero que o usuario exigiu no input
-
-                //O PLANO É O SEGUINTE: vou criar um numero de registradores temporarios igual a m para cada loop do n
-                e cada registrador temporario vai guardar uma info. Depois, vai passando usando o filtrar para chegar nos byte offsets
-                e ir atualizando as infos
-                }
-
-
-
+            int byteOffSetRegistro = ftell(arqin); //vamos guardar este byte offset para caso este seja o registro que atualizaremos
+            registrotemp = recordFromBin(arqin); //guardaremos o registro lido em registrotemp (que sera usado para ver se os criterios batem)
+            if (recordMeetsCriteria(registrotemp, m, criteriosBusca)) { //verificamos se o registro bate com o criterio imposto pelo usuario
+                atualizaCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para atualizar os campos do registro
+                fseek(arqin, byteOffSetRegistro, SEEK_SET);
+                writeRecordOnBin(registrotemp, arqin);
 
 
             }
 
         }
+        for (int j = 0; j < m; j++) { //vamos liberar a memoria dos criterios antes da proxima volta do loop
+            deleteCriteria(criteriosBusca[j]); 
+        }
+        for (int j = 0; j < atts; j++) {
+            deleteCriteria(criteriosAtt[j]);
+        }
+        fclose(arqin);
     }
 }

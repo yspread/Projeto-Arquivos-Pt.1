@@ -506,3 +506,95 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
         contBytes++;
     }
 }
+
+void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //funcao que pega as atualizacoes (criteriosAtt) e escreve no registro
+    for (int i = 0; i < atts; i++) { //esse loop deve se repetir para cada atualizacao de campo que vamos fazer
+        char *campo = criteriosAtt[i]->nomeCampo; //guardaremos aqui qual o nome do campo
+        char *valor = criteriosAtt[i]->valorCampo; //e aqui o valor armazenado nesse campo
+
+        if (strcmp(campo, "nomeEstacao") == 0) { //devemos tratar do caso especial em que o campo em questao seja o nomeEstacao, pois é uma string de tamanho variavel, nao basta apenas substituir o que ha li
+            if (registro->nomeEstacao != NULL) { //como essa string de tamanho variavel usa alocacao dinamica, liberamos esse espaço ocupado
+                free(registro->nomeEstacao);
+            }
+            
+            if (strcmp(valor, "NULO") == 0) { //se tivermos que ocupar esse campo com NULO, nao deve haver nada ali e seu tamanho sera 0
+                registro->tamNomeEstacao = 0;
+                registro->nomeEstacao = NULL;
+            } else { //para qualquer outro caso, apenas atualizamos o valor do campo e seu tamanho
+                registro->tamNomeEstacao = strlen(valor);
+                registro->nomeEstacao = malloc((registro->tamNomeEstacao + 1) * sizeof(char));
+                strcpy(registro->nomeEstacao, valor);
+            }
+        } 
+        else if (strcmp(campo, "nomeLinha") == 0) { //a mesma logica do nomeEstacao se aplica ao nomeLinha
+            if (registro->nomeLinha != NULL) {
+                free(registro->nomeLinha);
+            }
+            
+            if (strcmp(valor, "NULO") == 0) {
+                registro->tamNomeLinha = 0;
+                registro->nomeLinha = NULL;
+            } else {
+                registro->tamNomeLinha = strlen(valor);
+                registro->nomeLinha = malloc((registro->tamNomeLinha + 1) * sizeof(char));
+                strcpy(registro->nomeLinha, valor);
+            }
+        }
+        else if (strcmp(campo, "codEstacao") == 0) { //ja para o caso de quaisquer outros campos, usamos apenas a logica de substituicao
+            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+                registro->codEstacao = -1;
+            }
+            else {          //se nao, inserimos o valor em int (atoi)
+                registro->codEstacao = atoi(valor);
+            }
+        
+        } 
+        else if (strcmp(campo, "codLinha") == 0) {
+             if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+                registro->codLinha = -1;
+            }
+            else {          //se nao, inserimos o valor em int (atoi)
+                registro->codLinha = atoi(valor);
+            }
+        } 
+        else if (strcmp(campo, "codProxEstacao") == 0) {
+             if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+                registro->codProxEstacao = -1;
+            }
+            else {          //se nao, inserimos o valor em int (atoi)
+                registro->codProxEstacao = atoi(valor);
+            }
+        } 
+        else if (strcmp(campo, "distProxEstacao") == 0) {
+            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+                registro->distProxEstacao = -1;
+            }
+            else {          //se nao, inserimos o valor em int (atoi)
+                registro->distProxEstacao = atoi(valor);
+            }
+        } 
+        else if (strcmp(campo, "codLinhaIntegra") == 0) {
+            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+                registro->codLinhaIntegra = -1;
+            }
+            else {          //se nao, inserimos o valor em int (atoi)
+                registro->codLinhaIntegra = atoi(valor);
+            }
+        } 
+        else if (strcmp(campo, "codEstIntegra") == 0) {
+            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+                registro->codEstIntegra = -1;
+            }
+            else {          //se nao, inserimos o valor em int (atoi)
+                registro->codEstIntegra = atoi(valor);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+}
