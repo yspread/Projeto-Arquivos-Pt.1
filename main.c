@@ -27,13 +27,19 @@ int main()
             filterRecords(arquivoentrada, n);
             break;
         case 4: //remoção lógica
-
+            int n;
+            scanf("%d", &n);
+            removeRecords(arquivoentrada, n);
             break;
         case 5: //inserção de registro
-
+            int n;
+            scanf("%d", &n);
+            insertRecords(arquivoentrada, n);
             break;
         case 6: //atualização de arquivo
-
+            int n;
+            scanf("%d", &n);
+            updateRecords(arquivoentrada, n);
             break;
         default: //funcionalidade inválida
             printf("Funcionalidade inválida!\n");
