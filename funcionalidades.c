@@ -218,12 +218,6 @@ void removeRecords(char *arqentrada, int n)  {
     char nomecampo[256];
     char valorcampo[256];
     char *stringtemp;
-    char *listanomesestacoes[10000]; //vai armazenar os nomes de estacoes que ja foram registrados, a fim de não contar os repetidos
-    int contanomes = 0; //conta quantos nomes diferentes tem na lista   
-    char *nomeestacaotemp; //armazenará temporariamente o nome da estacao de um registro
-    int listacodestacoes[10000], listacodproxestacoes[10000]; //lista vai armazenar os pares de codEstacao e codProxEstacao diferentes
-    int contapares = 0; //conta quantos pares codEstacao, codProxEstaco diferentes tem na lista
-    int codestacaotemp, codproxestacaotemp;; //armazenarao temporariamente o codigo da estacao e o codigo da proxima estacao de um registro
     REGISTRO *registrotemp;
     fseek(arqin, 17, SEEK_SET);
     for (int i=0; i< n; i++)
@@ -263,19 +257,16 @@ void removeRecords(char *arqentrada, int n)  {
                 fwrite(&numUm, sizeof(char), 1, arqin); //escrevemos 1 onde antes estava 0, simbolizando que o arquivo foi removido
                 fwrite(&campoProximo, sizeof(int), 1, arqin); //escrevemos no campo "proximo" do registro o RRN daquele antigo topo do header 
                 fseek(arqin, 75, SEEK_CUR); //este passo é necessario para irmos para o proximo registro; pulamos 75 bytes pois acabamos de escrever no campo "proximo", que termina no byte 4 (quinto byte)
-                //ALTERAR NROESTACOES E NROPARESESTACAO
-                //FAZER FUNÇÃO PARA ISSO
-
-                
             }
         }
     }
-    setNroEstacoes(headertemp, contanomes); //atualizo o valor de header->nroEstacoes
-    setNroParesEstacao(headertemp, contapares); //atualizo o valor de header->nroParesEstacao
-    fseek(arqin, 1, SEEK_SET); //hora de atualizar a header principal 
-    int novoTopo = getTopo(headertemp); //vamos pegar o topo da headertemp (o atual topo da pilha)
-    fwrite(&novoTopo, sizeof(int), 1, arqin); //e escrever esse novo atual topo na header principal
-
+    int nroEstacoes, nroPares;
+    contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
+    setNroEstacoes(headertemp, nroEstacoes); //colocamos o novo numero de estações na headertemp
+    setNroParesEstacao(headertemp, nroPares); //o mesmo para o numero de pares de estacao
+    changeHeaderStatus(headertemp);
+    fseek(arqin, 0, SEEK_SET); //hora de atualizar a header principal 
+    writeHeaderOnBin(headertemp, arqin); //escrevemos a header temporaria na header principal
     deleteHeader(headertemp); //agora podemos liberar a memoria da headertemp
     fclose(arqin);
     BinarioNaTela(arqentrada);

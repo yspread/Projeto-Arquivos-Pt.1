@@ -592,8 +592,63 @@ void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criterios
     }
 }
 
+void contarEstacoesEPares(FILE *arqin, int *nroEstacoes, int *nroParesEstacao) {
+    char *listaNomes[10000];
+    int contaNomes = 0; //esta variável vai guardar quantos nomes unicos ja encontramos
+    int listaEstacao[10000], listaProx[10000]; //vamos guardar aqui os codEstacao e os codProxEstacao
+    int contaPares = 0;
 
-
-
-
+    fseek(arqin, 17, SEEK_SET); //vamos começar a leitura após o cabeçalho 
+    
+    char temp;
+    while (fread(&temp, sizeof(char), 1, arqin))  //só paramos se chegarmos ao fim do arquivo
+    { 
+        fseek(arqin, -1, SEEK_CUR); 
+        REGISTRO *registro = recordFromBin(arqin); //vamos guardar o registro em "registro"
+        if (registro != NULL)  //como o recordFromBin devolve NULL para registros com status removidos, devemos ver se o registro não foi removido
+        {
+            int existeNome = 0;    //começamos assumindo que ainda nao vimos o nome
+            for (int i = 0; i < contaNomes; i++) 
+            {
+                if (strcmp(registro->nomeEstacao, listaNomes[i]) == 0) 
+                { 
+                    existeNome = 1; //se o nome da estacao lido ja estiver na lista de nomes, entao o nome ja existia e mudamos o existeNome
+                    break;
+                }
+            }
+            if (existeNome == 0)  //se o existeNome continua sendo 0, entao temos aqui um nome novo, que deve ser anotado na listaNomes
+            {
+                listaNomes[contaNomes] = (char *)malloc((strlen(registro->nomeEstacao) + 1) * sizeof(char)); //alocamos espaço para escrever na listaNomes
+                strcpy(listaNomes[contaNomes], registro->nomeEstacao);
+                contaNomes++; 
+            }
+            
+            int existePar = 0; //agora devemos contar os pares, seguindo a mesma logica
+            if (registro->codEstacao != -1 && registro->codProxEstacao != -1) 
+            {
+                for (int i = 0; i < contaPares; i++)
+                {
+                    if (registro->codEstacao == listaEstacao[i] && registro->codProxEstacao == listaProx[i]) //se tivermos um par
+                    { 
+                        existePar = 1;
+                        break;
+                    }
+                }
+                if (existePar == 0) //se o par nao existe, basta adicionar
+                { 
+                    listaEstacao[contaPares] = registro->codEstacao;
+                    listaProx[contaPares] = registro->codProxEstacao;
+                    contaPares++;
+                }
+            }
+            deleteRecord(registro); 
+        }
+    }
+    *nroEstacoes = contaNomes; //o nroEstacoes vai guardar o numero de nomes unicos
+    *nroParesEstacao = contaPares; //o mesmo para o nroParesEstacao
+    for (int i = 0; i < contaNomes; i++)  //liberamos o espaço na listaNomes
+    {
+            free(listaNomes[i]);
+    }
+}
 
