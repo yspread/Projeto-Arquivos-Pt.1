@@ -259,6 +259,10 @@ void removeRecords(char *arqentrada, int n)  {
                 fseek(arqin, 75, SEEK_CUR); //este passo é necessario para irmos para o proximo registro; pulamos 75 bytes pois acabamos de escrever no campo "proximo", que termina no byte 4 (quinto byte)
             }
         }
+        for (int j=0; j< m;j++) 
+        {
+            deleteCriteria(criteriosBusca[j]);
+        }
     }
     int nroEstacoes, nroPares;
     contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
@@ -302,22 +306,21 @@ void insertRecords(char *arqentrada, int n) {
         char codEstIntegra[50];
         char nomeEstacao[50];
         char nomeLinha[50];
-        scanf("%s", &codEstacao); //temos que fazer o scanf na ordem exemplificada nas especificacoes
-        scanf("%s", &codLinha); 
-        scanf("%s", &codProxEstacao);
-        scanf("%s", &distProxEstacao);
-        scanf("%s", &codLinhaIntegra);
-        scanf("%s", &codEstIntegra);
+        scanf("%s", codEstacao); //temos que fazer o scanf na ordem exemplificada nas especificacoes
+        scanf("%s", codLinha); 
+        scanf("%s", codProxEstacao);
+        scanf("%s", distProxEstacao);
+        scanf("%s", codLinhaIntegra);
+        scanf("%s", codEstIntegra);
         ScanQuoteString(nomeEstacao); //para as strings, que estao entre aspas, usamos a funcao fornecida
         ScanQuoteString(nomeLinha);
 
-        if (atualTopo == -1) { //se nao ha topo, entao nao ha registross removidos.A insercao ocorre no byte offset do proxRRN
+        if (atualTopo == -1) { //se nao ha topo, entao nao ha registros removidos.A insercao ocorre no byte offset do proxRRN
             int byteOffSetproxRRN = atualproxRRN * 80 + 17; //devemos achar o byte offset do proxRRN para fazer a insercao
             fseek(arqin, byteOffSetproxRRN, SEEK_SET); //movemos o cursor para la
             escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
-
-
-            setProxRRN(headertemp, getProxRRN(headertemp) + 1); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
+            atualproxRRN++;
+            setProxRRN(headertemp,atualproxRRN); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
         }
         else { //se topo !=1, entao ha registros removidos. Devemos usar a pilha de registros removidos para achar esses espaços vazios e inserir ali
             //como a pilha se da pelo campo "proximo" dos registros, devemos pegar o "proximo" do topo, tornar esse proximo o novo topo e 
@@ -325,17 +328,31 @@ void insertRecords(char *arqentrada, int n) {
             int proxAntigoTopo; //vamos guardar nesta variavel o campo "proximo" daquele que é o atual (mas logo será o antigo) topo da pilha de removidos
             fseek(arqin, atualTopo+1, SEEK_SET); //movemos o cursor para a posicao do campo "proximo" do topo
             fread(&proxAntigoTopo, sizeof(int), 1, arqin); //lemos o RRN que estava ali e guardamos na variavel proxAntigoTopo
-            int novoTopo = proxAntigoTopo * 80 + 17; //trnasformamos aquele RRN em byte offset
+            int novoTopo;
+            if (proxAntigoTopo == -1) { //devemos tratar do caso em que inserimos no ultimo elemento da pilha.
+                novoTopo = -1; //se a pilha acaba, o topo volta a ser -1
+            }
+            else {
+                novoTopo = proxAntigoTopo * 80 + 17; //trnasformamos aquele RRN em byte offset
+
+            }
             setTopo(headertemp, novoTopo); //esse byte offset é o novo topo da pilha. Botamos ele no campo "topo" da header temporaria
             fseek(arqin, atualTopo, SEEK_SET); //aqui botamos o cursor no byte offset do antigo topo da pilha de removidos. É aqui que vamos escrever o novo registro
             escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha) ;
+            atualTopo = novoTopo; //temos um novo atualTopo
         }
     }
-    fseek(arqin, 1, SEEK_SET); //hora de atualizar a header principal 
+    fseek(arqin, 0, SEEK_SET); //hora de atualizar a header principal 
     int novoTopo = getTopo(headertemp); //vamos pegar o topo da headertemp (o atual topo da pilha)
     int novoProxRRN = getProxRRN(headertemp); //o mesmo vale para o proxRRN
-    fwrite(&novoTopo, sizeof(int), 1, arqin); //e escrever esse novo atual topo na header principal
-    fwrite(&novoProxRRN, sizeof(int), 1, arqin); //e escrever esse novo atual topo na header principal
+    int nroEstacoes, nroPares;
+    setTopo(headertemp, novoTopo); //escrevemos o novo topo e nova proxRRN na headertemp
+    setProxRRN(headertemp, novoProxRRN);
+    contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
+    setNroEstacoes(headertemp, nroEstacoes); //colocamos o novo numero de estações na headertemp
+    setNroParesEstacao(headertemp, nroPares); //o mesmo para o numero de pares de estacao
+    changeHeaderStatus(headertemp); 
+    writeHeaderOnBin(headertemp, arqin); //escrevemos a header temporaria na header principal
     deleteHeader(headertemp); //agora podemos liberar a memoria da headertemp
     fclose(arqin);
     BinarioNaTela(arqentrada);
@@ -350,7 +367,9 @@ void updateRecords(char *arqentrada, int n) {
         printf("Falha no processamento do arquivo.");
         return;
     }
-    fwrite("1", sizeof(char),1,arqin);
+    char statusConsistente = '1';
+    char statusInconsistente = '0';
+    fwrite(&statusInconsistente, sizeof(char), 1, arqin); //o status eh inicialmente inconsitente
     int m;
     char nomecampo[256];
     char valorcampo[256];
@@ -411,6 +430,14 @@ void updateRecords(char *arqentrada, int n) {
             deleteCriteria(criteriosAtt[j]);
         }
     }
+
+    int nroEstacoes, nroPares; //as atualizações podem ter aumentado/diminuido tanto o nroEstacoes quanto o nroParesEstacoes
+    contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); // devemos reconta-los
+    fseek(arqin, 9, SEEK_SET); //é aqui que fica o byte offset do campo nroEstacoes. Aqui colocar direto na header é mais facil que usar a headertemp
+    fwrite(&nroEstacoes, sizeof(int), 1, arqin);
+    fwrite(&nroPares, sizeof(int), 1, arqin);
+    fseek(arqin, 0, SEEK_SET); // atualizamos o status para consistente
+    fwrite(&statusConsistente, sizeof(char), 1, arqin);
     fclose(arqin);
     BinarioNaTela(arqentrada);
 }
