@@ -9,6 +9,7 @@ int main()
 {
     int funcionalidade, n;
     char arquivoentrada[100]; 
+    int n;
     scanf("%d", &funcionalidade); //indica qual funcionalidade será usada
     scanf("%s", arquivoentrada); //indica o nome do arquivo que será usado como entrada 
     switch (funcionalidade)
