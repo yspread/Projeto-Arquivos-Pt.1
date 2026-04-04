@@ -413,4 +413,4 @@ void updateRecords(char *arqentrada, int n) {
     }
     fclose(arqin);
     BinarioNaTela(arqentrada);
-}
+} 
