@@ -628,7 +628,7 @@ void contarEstacoesEPares(FILE *arqin, int *nroEstacoes, int *nroParesEstacao) {
             {
                 for (int i = 0; i < contaPares; i++)
                 {
-                    if (registro->codEstacao == listaEstacao[i] && registro->codProxEstacao == listaProx[i]) //se tivermos um par
+                    if (((registro->codEstacao == listaEstacao[i] && registro->codProxEstacao == listaProx[i]) || (registro->codEstacao == listaProx[i] && registro->codProxEstacao == listaEstacao[i])) && registro->codProxEstacao != -1) //se tivermos um par
                     { 
                         existePar = 1;
                         break;
