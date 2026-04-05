@@ -406,6 +406,14 @@ void setValorCampo(CRITERIOS *criterios, char *valorCampo)
     strcpy(criterios->valorCampo, valorCampo);
 }
 
+void setProximo(REGISTRO *registro, int valor) {
+    registro->proximo = valor;
+}
+
+void setRemovido(REGISTRO *registro) {
+    registro->removido = '1';
+}
+
 void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *codProxEstacao, char *distProxEstacao, char *codLinhaIntegra, char *codEstIntegra, char *nomeEstacao, char *nomeLinha) {
     char zero ='0';
     int menosUm = -1;
@@ -471,34 +479,34 @@ void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *cod
         fwrite(&valorEmInt, sizeof(int), 1, arqin);
     }
     contBytes += 24; // 6 campos * 4 bytes = 24 bytes contados. Mesmo que os registros sejam nulos, seus tamanhos ainda sao de 4 bytes
-    tamNomeEstacao = strlen(nomeEstacao); //vamos pegar o tamanho do nomeEstacao e nomeLinha
-    tamNomeLinha = strlen(nomeLinha);
-    fwrite(&tamNomeEstacao, sizeof(int), 1, arqin);
-    contBytes += 4; //este campo é int
 
-    if (strcmp(nomeEstacao, "NULO") == 0) 
-    { //se o nomeEstacao for NULO, marcamos o campo como 0
-        fwrite(&zero, sizeof(int),1,arqin);
+    if (strcmp(nomeEstacao, "NULO") == 0 || strlen(nomeEstacao) == 0) {
+        tamNomeEstacao = 0; // se for nulo, o tamanho é 0
+    } else {
+        tamNomeEstacao = strlen(nomeEstacao); // se nao for, guardamos na variavel
     }
-    else 
-    { //se nao for nulo, marcamos como o input lido
-        fwrite(nomeEstacao, sizeof(int), 1, arqin);
-    }
-    contBytes += tamNomeEstacao;  //o numero de bytes será o tamanho do nomeEstacao
 
-    fwrite(&tamNomeLinha, sizeof(int), 1, arqin);
-    contBytes += 4;     
+    fwrite(&tamNomeEstacao, sizeof(int), 1, arqin); //escrevemos o tamanho da string
+    contBytes += 4;
 
+    if (tamNomeEstacao > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
+        fwrite(nomeEstacao, sizeof(char), tamNomeEstacao, arqin);
+        contBytes += tamNomeEstacao;
+    }
+    //faremos o mesmo com o nomeLinha
+    if (strcmp(nomeLinha, "NULO") == 0 || strlen(nomeLinha) == 0) {
+        tamNomeLinha = 0; // se for nulo, o tamanho é 0
+    } else {
+        tamNomeLinha = strlen(nomeLinha); // se nao for, guardamos na variavel
+    }
 
-    if (strcmp(nomeLinha, "NULO") == 0) 
-    { //se o nomeLinha for NULO, marcamos o campo como 0
-        fwrite(&zero, sizeof(int),1,arqin);
+    fwrite(&tamNomeLinha, sizeof(int), 1, arqin); //escrevemos o tamanho da string
+    contBytes += 4;
+
+    if (tamNomeLinha > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
+        fwrite(nomeLinha, sizeof(char), tamNomeLinha, arqin);
+        contBytes += tamNomeLinha;
     }
-    else 
-    { //se nao for nulo, marcamos como o input lido
-        fwrite(nomeLinha, sizeof(int), 1, arqin);
-    }
-    contBytes += tamNomeLinha;  //o numero de bytes será o tamanho do nomeLinha
     char lixo = '$'; //o espaço restante, preencheremos com $
     while (contBytes < 80)
     {
