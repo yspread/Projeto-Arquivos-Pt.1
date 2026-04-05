@@ -330,7 +330,7 @@ void insertRecords(char *arqentrada, int n) {
             } else {
                 novoTopo = proxAntigoTopo * 80 + 17; 
             }
-            = proxAntigoTopo * 80 + 17; //trnasformamos aquele RRN em byte offset
+            novoTopo = proxAntigoTopo * 80 + 17; //trnasformamos aquele RRN em byte offset
             setTopo(headertemp, novoTopo); //esse byte offset é o novo topo da pilha. Botamos ele no campo "topo" da header temporaria
             fseek(arqin, atualTopo, SEEK_SET); //aqui botamos o cursor no byte offset do antigo topo da pilha de removidos. É aqui que vamos escrever o novo registro
             escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha) ;
@@ -417,16 +417,6 @@ void updateRecords(char *arqentrada, int n) {
             deleteCriteria(criteriosAtt[j]);
         }
     }
-<<<<<<< HEAD
-=======
-    int nroEstacoes, nroPares; //as atualizações podem ter aumentado/diminuido tanto o nroEstacoes quanto o nroParesEstacoes
-    contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); // devemos reconta-los
-    fseek(arqin, 9, SEEK_SET); //é aqui que fica o byte offset do campo nroEstacoes. Aqui colocar direto na header é mais facil que usar a headertemp
-    fwrite(&nroEstacoes, sizeof(int), 1, arqin);
-    fwrite(&nroPares, sizeof(int), 1, arqin);
-    fseek(arqin, 0, SEEK_SET); // atualizamos o status para consistente
-    fwrite(&statusConsistente, sizeof(char), 1, arqin);
->>>>>>> f4fd8dc9ea386d9331dcc40624182d06b72ad215
     fclose(arqin);
     BinarioNaTela(arqentrada);
 } 
