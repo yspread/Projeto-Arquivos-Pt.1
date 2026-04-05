@@ -7,7 +7,7 @@
 
 int main()
 {
-    int funcionalidade, n;
+    int funcionalidade;
     char arquivoentrada[100]; 
     int n;
     scanf("%d", &funcionalidade); //indica qual funcionalidade será usada

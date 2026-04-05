@@ -207,12 +207,11 @@ void removeRecords(char *arqentrada, int n)  {
         return;
     }
     HEADER *headertemp = createHeader(); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
-    changeHeaderStatus(headertemp); 
+    changeHeaderStatus(headertemp); //mudamos o status da header
     fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
     int atualTopo; 
     fread(&atualTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
     setTopo(headertemp, atualTopo);
-
     int m;
     char temp;
     char nomecampo[256];
@@ -243,7 +242,7 @@ void removeRecords(char *arqentrada, int n)  {
             if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
             {
                 fseek(arqin, -80, SEEK_CUR); // se bater, entao voltamos 80 bytes (tamanho do registro) para modificar o campo "removido"
-                int byteoffset = ftell(arqin); //vamos guardar a posicao do ponteiro atual, que preenchera o campo "topo" do cabeçalho
+                int byteoffset = ftell(arqin); //vamos guardar a posicao do ponteiro atual, que preencherá o campo "topo" do cabeçalho
                 int campoProximo; //esta variavel ira guardar o RRN que sera armazenado no campo "proximo" do registro
                 atualTopo = getTopo(headertemp);
                 if (atualTopo == -1) { //devemos tratar do caso em que este seja o primeiro registro a ser removido, pois o topo é -1 e essa posicao de byte offset nao existe
@@ -417,6 +416,7 @@ void updateRecords(char *arqentrada, int n) {
                 atualizarCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para armazenar as atualizações no registrotemp
                 fseek(arqin, byteOffSetRegistro, SEEK_SET); //vamos mover o curso para o byte offset do registro a ser atualizado
                 writeRecordOnBin(registrotemp, arqin); //escrevemos o registro atualizado ali
+                fflush(arqin);
             }
             if (registrotemp != NULL) //desaloco a memória alocada para o registro temporário
             {
@@ -430,7 +430,6 @@ void updateRecords(char *arqentrada, int n) {
             deleteCriteria(criteriosAtt[j]);
         }
     }
-
     int nroEstacoes, nroPares; //as atualizações podem ter aumentado/diminuido tanto o nroEstacoes quanto o nroParesEstacoes
     contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); // devemos reconta-los
     fseek(arqin, 9, SEEK_SET); //é aqui que fica o byte offset do campo nroEstacoes. Aqui colocar direto na header é mais facil que usar a headertemp
