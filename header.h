@@ -7,7 +7,7 @@
 
     HEADER *createHeader(); //função para criar o cabeçalho do arquivo
     void deleteHeader(HEADER *header); //função para apagar o cabeçalho da memória
-    void writeHeaderOnBin(HEADER *header, FILE *arqbin); //escreve os dados de uma header em um arquivo binário
+    void writeHeaderOnBin(HEADER *header, FILE *arqbin); //escreve os dados do cabeçalho em um arquivo binário
 
     //funções para alterar valores de campos da header
     void changeHeaderStatus(HEADER *header); //troca de 0 pra 1 ou de 1 pra 0 o campo status da header
@@ -20,6 +20,6 @@
     char getStatus(HEADER *header); //retorna header->status
     int getTopo(HEADER *header); //retorna o topo da pilha de arquivos logicamente removidos(header->topo)
     int getProxRRN(HEADER *header); //retorna o valor de header->proxRRN
-    int getNroEstacoes(HEADER *header); //retorna o valor de header->nroEstacoes
-    int getNroParesEstacao(HEADER *header); //retorna o valor header->nroParesEstacao
+    int getNroEstacoes(HEADER *header); //retorna o valor de header->nroestacoes
+    int getNroParesEstacao(HEADER *header); //retorna o valor header->nroparesestacoes
 #endif

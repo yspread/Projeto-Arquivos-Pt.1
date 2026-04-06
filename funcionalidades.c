@@ -101,6 +101,7 @@ void readRecords(char *arqentrada, char *arqsaida){
     writeHeaderOnBin(header, arqout); //sobrescrevo a header antiga com os novos dados da header
     fclose(arqin);
     fclose(arqout);
+    deleteHeader(header);
     BinarioNaTela(arqsaida);
     return;
 }
@@ -126,8 +127,7 @@ void showRecords(char *arqentrada)
         printRecord(registrotemp); //imprimo o registro se ele não tiver sido logicamente removido
         if (registrotemp != NULL)
         {
-            free(registrotemp);
-            registrotemp = NULL;
+            deleteRecord(registrotemp);
         }
     }
     fclose(arqin);
@@ -247,7 +247,7 @@ void removeRecords(char *arqentrada, int n)  {
                 int rrnAtual = (byteOffSetRegistro - 17) / 80; //calculamos o rrn do byte offset do registro em questao
                 setProximo(registrotemp, getTopo(headertemp));//o campo "proximo" do registro removido recebe o rrn do antigo topo da pilha
                 setTopo(headertemp, rrnAtual); //atualizamos o topo do cabecalho
-                setRemovido(registrotemp);
+                removeRecord(registrotemp);
                 fseek(arqin, byteOffSetRegistro, SEEK_SET);  //voltamos para o inicio do registro e gravamos o registro atualizado
                 writeRecordOnBin(registrotemp, arqin); 
             }

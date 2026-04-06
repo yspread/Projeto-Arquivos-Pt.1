@@ -5,76 +5,78 @@
 
 typedef struct registro_{
     //campos de tamanho fixo
-    char removido; //indica se registro está logicamente removido
+    char removido; //indica se registro está logicamente removido ou não
     int proximo; //valor do RRN do proximo registro logicamente removido
-    int codEstacao;
-    int codLinha;
-    int codProxEstacao;
-    int distProxEstacao;
-    int codLinhaIntegra;
-    int codEstIntegra;
+    int codestacao;
+    int codlinha;
+    int codproxestacao;
+    int distproxestacao;
+    int codlinhaintegra;
+    int codestintegra;
     //campos de tamanho variável e seus indicadores de tamanho
-    int tamNomeEstacao;
-    char *nomeEstacao;
-    int tamNomeLinha;
-    char *nomeLinha;
+    int tamnomeestacao;
+    char *nomeestacao;
+    int tamnomelinha;
+    char *nomelinha;
 } REGISTRO;
 
-//essa struct vai armazenar os critérios que devem ser cumpridos por um registro durante as buscas
+//essa struct vai armazenar os critérios de busca que um registro deve atender
 typedef struct criterios_{
-    char *nomeCampo;
-    char *valorCampo;
+    char *nomecampo;
+    char *valorcampo;
 }CRITERIOS;
 
 //todos os parâmetros serão retirados do arquivo de entrada para se criar um registro
-REGISTRO *createRecord(int codEstacao, int codLinha, int codProxEstacao, int distProxEstacao, int codLinhaIntegra, int codEstIntegra, char* nomeEstacao, char *nomeLinha)
+REGISTRO *createRecord(int codestacao, int codlinha, int codproxestacao, int distproxestacao, int codlinhaintegra, int codestintegra, char* nomeestacao, char *nomelinha)
 {
     REGISTRO *registro = (REGISTRO *)malloc(sizeof(REGISTRO)); //memória alocada dinamicamente para o registro
     if (registro != NULL)
     {
         registro->removido = '0';
         registro->proximo = -1;
-        registro->codEstacao = codEstacao;
-        registro->codLinha = codLinha;
-        registro->codProxEstacao = codProxEstacao;
-        registro->distProxEstacao = distProxEstacao;
-        registro->codLinhaIntegra = codLinhaIntegra;
-        registro->codEstIntegra = codEstIntegra;
-        registro->tamNomeEstacao = strlen(nomeEstacao);
-        registro->nomeEstacao = malloc(registro->tamNomeEstacao + 1);
-        strcpy(registro->nomeEstacao, nomeEstacao);
-        registro->tamNomeLinha = strlen(nomeLinha);
-        if (registro->tamNomeLinha != 0) //em caso do campo nomeLinha ser nulo, não devemos alocar memória
+        registro->codestacao = codestacao;
+        registro->codlinha = codlinha;
+        registro->codproxestacao = codproxestacao;
+        registro->distproxestacao = distproxestacao;
+        registro->codlinhaintegra = codlinhaintegra;
+        registro->codestintegra = codestintegra;
+        registro->tamnomeestacao = strlen(nomeestacao);
+        registro->nomeestacao = malloc(registro->tamnomeestacao + 1); //precisamos alocar a memória com strlen + 1 para que haja espaço suficiente para o \0
+        strcpy(registro->nomeestacao, nomeestacao);
+        registro->tamnomelinha = strlen(nomelinha);
+        if (registro->tamnomelinha != 0)    //em caso do campo nomelinha ser nulo, não devemos alocar memória
         {
-            registro->nomeLinha = malloc(registro->tamNomeLinha + 1);
+            registro->nomelinha = malloc(registro->tamnomelinha + 1);
         }
-        strcpy(registro->nomeLinha, nomeLinha);
+        strcpy(registro->nomelinha, nomelinha);
     }
     return registro;
 }
 
+// liberamos a memória alocada para um registro
 void deleteRecord(REGISTRO *registro)
 {
-    if (registro->tamNomeLinha != 0)
+    if (registro->tamnomelinha != 0)
     {
-        free(registro->nomeLinha);
-        (registro->nomeLinha) = NULL;
+        free(registro->nomelinha);
+        (registro->nomelinha) = NULL;
     }
-    free(registro->nomeEstacao);
-    (registro->nomeEstacao) = NULL;
+    free(registro->nomeestacao);
+    (registro->nomeestacao) = NULL;
     free(registro);
     registro = NULL;
 }
 
-CRITERIOS *createCriteria(char *nomeCampo, char *valorCampo)
+//essa struct armazena os critérios de busca que serão usados nas funções filterRecords, removeRecords e updateRecords
+CRITERIOS *createCriteria(char *nomecampo, char *valorcampo)
 {
     CRITERIOS *criterios = malloc(sizeof(CRITERIOS));
     if (criterios != NULL)
     {
-        criterios->nomeCampo = malloc(strlen(nomeCampo)+1);
-        strcpy(criterios->nomeCampo, nomeCampo);
-        criterios->valorCampo = malloc(strlen(valorCampo)+1);
-        strcpy(criterios->valorCampo, valorCampo);
+        criterios->nomecampo = malloc(strlen(nomecampo)+1);
+        strcpy(criterios->nomecampo, nomecampo);
+        criterios->valorcampo = malloc(strlen(valorcampo)+1);
+        strcpy(criterios->valorcampo, valorcampo);
         return criterios;
     }
     else
@@ -83,64 +85,66 @@ CRITERIOS *createCriteria(char *nomeCampo, char *valorCampo)
     }
 }
 
+// libera a memória alocada para a struct de critérios de busca
 void deleteCriteria(CRITERIOS *criterios)
 {
     if(criterios != NULL)
     {
-        free(criterios->nomeCampo);
-        criterios->nomeCampo = NULL;
-        free(criterios->valorCampo);
-        criterios->valorCampo = NULL;
+        free(criterios->nomecampo);
+        criterios->nomecampo = NULL;
+        free(criterios->valorcampo);
+        criterios->valorcampo = NULL;
     }
     free(criterios);
     criterios = NULL;
 }
 
+//essa função pega uma linha do csv, separa em tokens e utiliza esses tokens pra criar um registro, direcionando os tokens para os campos do registro correspondentes
 REGISTRO *recordFromCSV(char *buffer)
 {
-    int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra;  //todos os tokens que serão obtidos com a strsep
-    char *nomeEstacao, *nomeLinha, *tokenTemp;                                          //e serão utilizados na criação de um registro
-
+    int codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra;  //todos os tokens que serão obtidos com o strsep
+    char *nomeestacao, *nomelinha, *tokenTemp;                                          //e serão utilizados na criação de um registro
     buffer[strcspn(buffer, "\r\n")] = '\0'; //limpa possíveis \r e \n que possam ter sido lidos
     //tokenização de acordo com a ordem dos campos no arquivo csv
-    codEstacao = atoi(strsep(&buffer, ",")); //esse valor não pode ser nulo
-    nomeEstacao = strsep(&buffer, ",");
+    codestacao = atoi(strsep(&buffer, ",")); //esse valor não pode ser nulo
+    nomeestacao = strsep(&buffer, ",");
+    tokenTemp = strsep(&buffer, ",");
+    if (tokenTemp[0] != '\0') //caso o strsep se depare com 2 vírgulas consecutivas (oq significa um espaço nulo), ele retorna uma string "\0" 
+    {
+        codlinha = atoi(tokenTemp);
+    }
+    else codlinha = -1;                //no caso dos inteiros, se o campo for nulo, deve ser salvo como -1
+    nomelinha = strsep(&buffer, ","); //se uma string for nula, a criação do registro ja considerará tamnomelinha como 0
     tokenTemp = strsep(&buffer, ",");
     if (tokenTemp[0] != '\0')
     {
-        codLinha = atoi(tokenTemp);
+        codproxest = atoi(tokenTemp);
     }
-    else codLinha = -1;                //no caso dos inteiros, se o campo for nulo, deve ser salvo como -1
-    nomeLinha = strsep(&buffer, ","); //se for null, na criação do registro ja considerará tamNomeLinha como 0
+    else codproxest = -1; 
     tokenTemp = strsep(&buffer, ",");
     if (tokenTemp[0] != '\0')
     {
-        codProxEst = atoi(tokenTemp);
+        distproxest = atoi(tokenTemp);
     }
-    else codProxEst = -1; 
+    else distproxest = -1;
     tokenTemp = strsep(&buffer, ",");
     if (tokenTemp[0] != '\0')
     {
-        distProxEst = atoi(tokenTemp);
+        codlinhaintegra = atoi(tokenTemp);
     }
-    else distProxEst = -1;
+    else codlinhaintegra = -1;
     tokenTemp = strsep(&buffer, ",");
     if (tokenTemp[0] != '\0')
     {
-        codLinhaIntegra = atoi(tokenTemp);
+        codestintegra = atoi(tokenTemp);
     }
-    else codLinhaIntegra = -1;
-    tokenTemp = strsep(&buffer, ",");
-    if (tokenTemp[0] != '\0')
-    {
-        codEstIntegra = atoi(tokenTemp);
-    }
-    else codEstIntegra = -1;
+    else codestintegra = -1;
     //criação do registro usando todos os tokens coletados
-    REGISTRO *registro = createRecord(codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
+    REGISTRO *registro = createRecord(codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra, nomeestacao, nomelinha);
     return registro;
 }
 
+//le os bytes de um registro salvo num arquivo binário e transforma em um uma struct registro
 REGISTRO *recordFromBin(FILE *arqbin)
 {
     char removido;   
@@ -152,55 +156,59 @@ REGISTRO *recordFromBin(FILE *arqbin)
     }
     else
     {
-        int codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, tamNomeEstacao, tamNomeLinha;  //todos os campos que serão lidos do registro
+        int codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra, tamnomeestacao, tamnomelinha;  //todos os campos que serão lidos do registro
+        
         fseek(arqbin, 4, SEEK_CUR); //ponteiro pula o campo registro->proximo
         //leitura de todos os campos do registro
-        fread(&codEstacao, sizeof(int), 1, arqbin);
-        fread(&codLinha, sizeof(int), 1, arqbin);
-        fread(&codProxEst, sizeof(int), 1, arqbin);
-        fread(&distProxEst, sizeof(int), 1, arqbin);
-        fread(&codLinhaIntegra, sizeof(int), 1, arqbin);
-        fread(&codEstIntegra, sizeof(int), 1, arqbin);
-        fread(&tamNomeEstacao, sizeof(int), 1, arqbin);
-        char *nomeEstacao = malloc(tamNomeEstacao + 1); //é necessário alocar com +1 para poder colocar o '\0' que não foi salvo
-        fread(nomeEstacao, tamNomeEstacao, 1, arqbin);
-        fread(&tamNomeLinha, sizeof(int), 1, arqbin);
-        char *nomeLinha = malloc(tamNomeLinha + 1);
-        fread(nomeLinha, tamNomeLinha, 1, arqbin);
-        nomeEstacao[tamNomeEstacao] = '\0';
-        nomeLinha[tamNomeLinha] = '\0';
-        int lixo = 80 - (tamNomeLinha + tamNomeEstacao + 37); //a quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
+        fread(&codestacao, sizeof(int), 1, arqbin);
+        fread(&codlinha, sizeof(int), 1, arqbin);
+        fread(&codproxest, sizeof(int), 1, arqbin);
+        fread(&distproxest, sizeof(int), 1, arqbin);
+        fread(&codlinhaintegra, sizeof(int), 1, arqbin);
+        fread(&codestintegra, sizeof(int), 1, arqbin);
+        fread(&tamnomeestacao, sizeof(int), 1, arqbin);
+        char *nomeestacao = (char *)malloc(tamnomeestacao + 1); //alocação dinamica para a variavel local
+        fread(nomeestacao, tamnomeestacao, 1, arqbin);
+        fread(&tamnomelinha, sizeof(int), 1, arqbin);
+        char *nomelinha = (char *)malloc(tamnomelinha + 1);
+        fread(nomelinha, tamnomelinha, 1, arqbin);
+        nomeestacao[tamnomeestacao] = '\0'; //adiciona o '\0' ao final das strings, já que elas estavam salvas sem ele no binário
+        nomelinha[tamnomelinha] = '\0';
+        int lixo = 80 - (tamnomelinha + tamnomeestacao + 37); //calculo da quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
         fseek(arqbin, lixo, SEEK_CUR); //ponteiro direcionado para o offset do proximo registro
-        REGISTRO *registro = createRecord(codEstacao, codLinha, codProxEst, distProxEst, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
-        free(nomeEstacao);
-        free(nomeLinha);
-        return registro;
+        REGISTRO *registro = createRecord(codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra, nomeestacao, nomelinha);
+        free(nomelinha); //liberando espaço alocado para as variáveis locais
+        nomelinha = NULL;
+        free(nomeestacao);
+        nomeestacao = NULL;
+        return registro; //registro criado com os dados lidos
     }
 }
 
-void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever um registro inteiro em um arquivo binário
+//escreve os dados de um regitro em um arquivo binário
+void writeRecordOnBin(REGISTRO *registro, FILE *fp)
 {
     //escrevo cada um dos campos no arquivo
     fwrite(&registro->removido, sizeof(char), 1,fp); //1 byte
     fwrite(&registro->proximo, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->codEstacao, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->codLinha, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->codProxEstacao, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->distProxEstacao, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->codLinhaIntegra, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->codEstIntegra, sizeof(int), 1,fp); //4 bytes
-    fwrite(&registro->tamNomeEstacao, sizeof(int), 1,fp); //4 bytes
-    if (registro->tamNomeEstacao != 0)
+    fwrite(&registro->codestacao, sizeof(int), 1,fp); //4 bytes
+    fwrite(&registro->codlinha, sizeof(int), 1,fp); //4 bytes
+    fwrite(&registro->codproxestacao, sizeof(int), 1,fp); //4 bytes
+    fwrite(&registro->distproxestacao, sizeof(int), 1,fp); //4 bytes
+    fwrite(&registro->codlinhaintegra, sizeof(int), 1,fp); //4 bytes
+    fwrite(&registro->codestintegra, sizeof(int), 1,fp); //4 bytes
+    fwrite(&registro->tamnomeestacao, sizeof(int), 1,fp); //4 bytes
+    if (registro->tamnomeestacao != 0)
     {
-        fwrite(registro->nomeEstacao, registro->tamNomeEstacao, 1,fp); //passando o espaço desejado dessa forma, eu excluo o \0 (que não deve ser salvo)
+        fwrite(registro->nomeestacao, registro->tamnomeestacao, 1,fp); //passando o espaço desejado dessa forma, eu excluo o \0 (que não deve ser salvo)
     }
-    fwrite(&registro->tamNomeLinha, sizeof(int), 1,fp); //4 bytes
-    if (registro->tamNomeLinha != 0)
+    fwrite(&registro->tamnomelinha, sizeof(int), 1,fp); //4 bytes
+    if (registro->tamnomelinha != 0)
     {
-        fwrite(registro->nomeLinha, registro->tamNomeLinha, 1,fp);
+        fwrite(registro->nomelinha, registro->tamnomelinha, 1,fp);
     }
-    //temos no total (37 + tamNomeLinha + tamNomeEstacao) bytes, devemos completar o que falta pra 80 bytes com lixo ("$")
-    int qtdlixo = 80 - (37 + registro->tamNomeLinha + registro->tamNomeEstacao); 
+    //temos no total (37 + tamnomelinha + tamnomeestacao) bytes, devemos completar o que falta pra 80 bytes com lixo ("$")
+    int qtdlixo = 80 - (37 + registro->tamnomelinha + registro->tamnomeestacao); 
     char lixo = '$';
     for (int i = 0; i < qtdlixo; i++)
     {
@@ -209,160 +217,162 @@ void writeRecordOnBin(REGISTRO *registro, FILE *fp) //função para se escrever 
     return;
 }
 
-void printRecord(REGISTRO *registro) //essa função vai pegar um registro e imprimir seus campos conforme a formatação pedida para a funcionalidade 2
+//essa função vai pegar um registro e imprimir seus campos conforme a formatação pedida pelas especificações do trabalho
+void printRecord(REGISTRO *registro)
 {
     if (registro == NULL) //se o registro for NULO, nada deve ser impresso
     {
         return;
     }
-    printf("%d %s ", registro->codEstacao, registro->nomeEstacao);
-    if (registro->codLinha == -1) //para os campos que não existem, deve ser printado como "NULO"
+    printf("%d %s ", registro->codestacao, registro->nomeestacao);
+    if (registro->codlinha == -1) //para os campos que não existem, deve ser printado como "NULO"
     {
         printf("NULO ");
     }
-    else printf("%d ", registro->codLinha);
-    if (registro->tamNomeLinha == 0)
+    else printf("%d ", registro->codlinha);
+    if (registro->tamnomelinha == 0)// para o campo "nomelinha" ser nulo, tamnomelinha deve valer 0
     {
         printf("NULO ");
     }
-    else printf("%s ", registro->nomeLinha);
-    if (registro->codProxEstacao == -1)
+    else printf("%s ", registro->nomelinha);
+    if (registro->codproxestacao == -1)
     {
         printf("NULO ");
     }
-    else printf("%d ", registro->codProxEstacao);
-    if (registro->distProxEstacao == -1)
+    else printf("%d ", registro->codproxestacao);
+    if (registro->distproxestacao == -1)
     {
         printf("NULO ");
     }
-    else printf("%d ", registro->distProxEstacao);
-    if (registro->codLinhaIntegra == -1)
+    else printf("%d ", registro->distproxestacao);
+    if (registro->codlinhaintegra == -1)
     {
         printf("NULO ");
     }
-    else printf("%d ", registro->codLinhaIntegra);
-    if (registro->codEstIntegra == -1)
+    else printf("%d ", registro->codlinhaintegra);
+    if (registro->codestintegra == -1)
     {
         printf("NULO\n");
     }
-    else printf("%d\n", registro->codEstIntegra);
+    else printf("%d\n", registro->codestintegra);
 }
 
+//função para verificar se um registro cumpre os critérios de uma busca
 int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
 {
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; i++) //m é a quantidade de critérios impostos na busca
     {
-        if (strcmp(criterios[i]->nomeCampo, "codEstacao") == 0)
+        if (strcmp(criterios[i]->nomecampo, "codEstacao") == 0)
         {
-            if(registro->codEstacao != atoi(criterios[i]->valorCampo))
+            if(registro->codestacao != atoi(criterios[i]->valorcampo)) //"valorcampo" é sempre lido como string. se o campo em questão for um inteiro, deve ser feita a conversão usando o atoi
             {
                 return 0;
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codLinha") == 0)
+        if (strcmp(criterios[i]->nomecampo, "codLinha") == 0)
         {
-            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
             {
-                if(registro->codLinha != -1)
+                if(registro->codlinha != -1)
                 {
                     return 0;
                 }
             }
             else
             {
-                if(registro->codLinha != atoi(criterios[i]->valorCampo))
+                if(registro->codlinha != atoi(criterios[i]->valorcampo))
                 {
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codProxEstacao") == 0)
+        if (strcmp(criterios[i]->nomecampo, "codProxEstacao") == 0)
         {
-            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
             {
-                if(registro->codProxEstacao != -1)
+                if(registro->codproxestacao != -1)
                 {
                     return 0;
                 }
             }
             else
             {
-                if(registro->codProxEstacao != atoi(criterios[i]->valorCampo))
+                if(registro->codproxestacao != atoi(criterios[i]->valorcampo))
                 {
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "distProxEstacao") == 0)
+        if (strcmp(criterios[i]->nomecampo, "distProxEstacao") == 0)
         {
-            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
             {
-                if(registro->distProxEstacao != -1)
+                if(registro->distproxestacao != -1)
                 {
                     return 0;
                 }
             }
             else
             {
-                if(registro->distProxEstacao != atoi(criterios[i]->valorCampo))
+                if(registro->distproxestacao != atoi(criterios[i]->valorcampo))
                 {
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codLinhaIntegra") == 0)
+        if (strcmp(criterios[i]->nomecampo, "codLinhaIntegra") == 0)
         {
-            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
             {
-                if(registro->codLinhaIntegra != -1)
+                if(registro->codlinhaintegra != -1)
                 {
                     return 0;
                 }
             }
             else
             {
-                if(registro->codLinhaIntegra != atoi(criterios[i]->valorCampo))
+                if(registro->codlinhaintegra != atoi(criterios[i]->valorcampo))
                 {
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "codEstIntegra") == 0)
+        if (strcmp(criterios[i]->nomecampo, "codEstIntegra") == 0)
         {
-            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
             {
-                if(registro->codEstIntegra != -1)
+                if(registro->codestintegra != -1)
                 {
                     return 0;
                 }
             }
             else
             {
-                if(registro->codEstIntegra != atoi(criterios[i]->valorCampo))
+                if(registro->codestintegra != atoi(criterios[i]->valorcampo))
                 {
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "nomeEstacao") == 0)
+        if (strcmp(criterios[i]->nomecampo, "nomeEstacao") == 0)
         {
-            if(strcmp(registro->nomeEstacao,criterios[i]->valorCampo) != 0)
+            if(strcmp(registro->nomeestacao,criterios[i]->valorcampo) != 0)
             {
                 return 0;
             }
         }
-        if (strcmp(criterios[i]->nomeCampo, "nomeLinha") == 0)
+        if (strcmp(criterios[i]->nomecampo, "nomeLinha") == 0)
         {
-            if(strcmp(criterios[i]->valorCampo, "NULO") == 0)
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
             {
-                if(registro->tamNomeLinha != 0)
+                if(registro->tamnomelinha != 0)
                 {
                     return 0;
                 }
             }
             else
             {
-                if(strcmp(registro->nomeLinha, criterios[i]->valorCampo) != 0)
+                if(strcmp(registro->nomelinha, criterios[i]->valorcampo) != 0)
                 {
                     return 0;
                 }
@@ -372,240 +382,248 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
     return 1; //o registro atendeu a todos os critérios
 }
 
+//função para se acessar o campo nomeestacao de um registro
 char *getNomeEstacao(REGISTRO *registro)
 {
     if(registro != NULL)
     {
-        return (registro->nomeEstacao);
+        return (registro->nomeestacao);
     }
 }
 
+//função para se acessar o campo codestacao de um registro
 int getCodEstacao(REGISTRO *registro)
 {
     if(registro != NULL)
     {
-        return (registro->codEstacao);
+        return (registro->codestacao);
     }
 }
 
+//função para se acessar o campo codproxestacao de um registro
 int getCodProxEstacao(REGISTRO *registro)
 {
     if(registro != NULL)
     {
-        return (registro->codProxEstacao);
+        return (registro->codproxestacao);
     }
 }
 
-void setNomeCampo(CRITERIOS *criterios, char *nomeCampo)
+//função para se alterar o valor do campo "nomecampo" de uma struct criterios
+void setNomeCampo(CRITERIOS *criterios, char *nomecampo)
 {
-    strcpy(criterios->nomeCampo, nomeCampo);
+    strcpy(criterios->nomecampo, nomecampo);
 }
 
-void setValorCampo(CRITERIOS *criterios, char *valorCampo)
+//função para se alterar o valor do campo "valorcampo" de uma struct criterios
+void setValorCampo(CRITERIOS *criterios, char *valorcampo)
 {
-    strcpy(criterios->valorCampo, valorCampo);
+    strcpy(criterios->valorcampo, valorcampo);
 }
 
-void setProximo(REGISTRO *registro, int valor) {
+//função para se alterar o valor do campo "proximo" de um registro
+void setProximo(REGISTRO *registro, int valor)
+{
     registro->proximo = valor;
 }
 
-void setRemovido(REGISTRO *registro) {
+//função para marcar um registro como logicamente removido
+void removeRecord(REGISTRO *registro) {
     registro->removido = '1';
 }
 
-void escreverNoRegistro(FILE *arqin, char *codEstacao, char *codLinha, char *codProxEstacao, char *distProxEstacao, char *codLinhaIntegra, char *codEstIntegra, char *nomeEstacao, char *nomeLinha) {
+void escreverNoRegistro(FILE *arqin, char *codestacao, char *codlinha, char *codproxestacao, char *distproxestacao, char *codlinhaintegra, char *codestintegra, char *nomeestacao, char *nomelinha) {
     char zero ='0';
-    int menosUm = -1;
-    int tamNomeEstacao;
-    int tamNomeLinha;
-    int contBytes =0; //vamos usar essas variavel para contar os bytes (do max de 80) do registro. no fim, o restante nao preenchido
+    int menosum = -1;
+    int tamnomeestacao;
+    int tamnomelinha;
+    int contabytes = 0; //vamos usar essas variavel para contar os bytes (do max de 80) do registro. no fim, o restante nao preenchido
                      // sera preenchido com $
     fwrite(&zero, sizeof(char), 1, arqin); //como o primeiro campo indica remocao, é inicializado com 0
-    contBytes++; //como é um char, avançamos 1 byte na contagem
-    fwrite(&menosUm, sizeof(int), 1, arqin); //o segundo campo deve ser incializado com -1
-    contBytes += 4; //como esse campo é um int, avançamos 4 bytes
-    if (strcmp(codEstacao, "NULO") == 0) { //se o codEstacao for NULO, marcamos o campo como -1
-        fwrite(&menosUm, sizeof(int),1,arqin);
+    contabytes++; //como é um char, avançamos 1 byte na contagem
+    fwrite(&menosum, sizeof(int), 1, arqin); //o segundo campo deve ser incializado com -1
+    contabytes += 4; //como esse campo é um int, avançamos 4 bytes
+    if (strcmp(codestacao, "NULO") == 0) { //se o codestacao for NULO, marcamos o campo como -1
+        fwrite(&menosum, sizeof(int),1,arqin);
     }
     else { //se nao for nulo, marcamos como o input lido
-        int valorEmInt = atoi(codEstacao); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+        int valoremint = atoi(codestacao); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valoremint, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(codLinha, "NULO") == 0) { //se o codLinha for NULO, marcamos o campo como -1
-        fwrite(&menosUm, sizeof(int),1,arqin);
+    if (strcmp(codlinha, "NULO") == 0) { //se o codlinha for NULO, marcamos o campo como -1
+        fwrite(&menosum, sizeof(int),1,arqin);
     }
     else { //se nao for nulo, marcamos como o input lido
-        int valorEmInt = atoi(codLinha); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+        int valoremint = atoi(codlinha); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valoremint, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(codProxEstacao, "NULO") == 0) { //se o codProxEstacao for NULO, marcamos o campo como -1
-        fwrite(&menosUm, sizeof(int),1,arqin);
+    if (strcmp(codproxestacao, "NULO") == 0) { //se o codproxestacao for NULO, marcamos o campo como -1
+        fwrite(&menosum, sizeof(int),1,arqin);
     }
     else { //se nao for nulo, marcamos como o input lido
-        int valorEmInt = atoi(codProxEstacao); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+        int valoremint = atoi(codproxestacao); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valoremint, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(distProxEstacao, "NULO") == 0) 
-    { //se o distProxEstacao for NULO, marcamos o campo como -1
-        fwrite(&menosUm, sizeof(int),1,arqin);
+    if (strcmp(distproxestacao, "NULO") == 0) 
+    { //se o distproxestacao for NULO, marcamos o campo como -1
+        fwrite(&menosum, sizeof(int),1,arqin);
     }
     else 
     { //se nao for nulo, marcamos como o input lido
-        int valorEmInt = atoi(distProxEstacao); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+        int valoremint = atoi(distproxestacao); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valoremint, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(codLinhaIntegra, "NULO") == 0) 
-    { //se o codLinhaIntegra for NULO, marcamos o campo como -1
-        fwrite(&menosUm, sizeof(int),1,arqin);
+    if (strcmp(codlinhaintegra, "NULO") == 0) 
+    { //se o codlinhaintegra for NULO, marcamos o campo como -1
+        fwrite(&menosum, sizeof(int),1,arqin);
     }
     else 
     { //se nao for nulo, marcamos como o input lido
-        int valorEmInt = atoi(codLinhaIntegra); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+        int valoremint = atoi(codlinhaintegra); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valoremint, sizeof(int), 1, arqin);
     }
 
-    if (strcmp(codEstIntegra, "NULO") == 0) 
-    { //se o codEstIntegra for NULO, marcamos o campo como -1
-        fwrite(&menosUm, sizeof(int),1,arqin);
+    if (strcmp(codestintegra, "NULO") == 0) 
+    { //se o codestintegra for NULO, marcamos o campo como -1
+        fwrite(&menosum, sizeof(int),1,arqin);
     }
     else 
     { //se nao for nulo, marcamos como o input lido
-        int valorEmInt = atoi(codEstIntegra); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valorEmInt, sizeof(int), 1, arqin);
+        int valoremint = atoi(codestintegra); //usamos isso para transformar o numero lido como string em int
+        fwrite(&valoremint, sizeof(int), 1, arqin);
     }
-    contBytes += 24; // 6 campos * 4 bytes = 24 bytes contados. Mesmo que os registros sejam nulos, seus tamanhos ainda sao de 4 bytes
+    contabytes += 24; // 6 campos * 4 bytes = 24 bytes contados. Mesmo que os registros sejam nulos, seus tamanhos ainda sao de 4 bytes
 
-    if (strcmp(nomeEstacao, "NULO") == 0 || strlen(nomeEstacao) == 0) {
-        tamNomeEstacao = 0; // se for nulo, o tamanho é 0
+    if (strcmp(nomeestacao, "NULO") == 0 || strlen(nomeestacao) == 0) {
+        tamnomeestacao = 0; // se for nulo, o tamanho é 0
     } else {
-        tamNomeEstacao = strlen(nomeEstacao); // se nao for, guardamos na variavel
+        tamnomeestacao = strlen(nomeestacao); // se nao for, guardamos na variavel
     }
 
-    fwrite(&tamNomeEstacao, sizeof(int), 1, arqin); //escrevemos o tamanho da string
-    contBytes += 4;
+    fwrite(&tamnomeestacao, sizeof(int), 1, arqin); //escrevemos o tamanho da string
+    contabytes += 4;
 
-    if (tamNomeEstacao > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
-        fwrite(nomeEstacao, sizeof(char), tamNomeEstacao, arqin);
-        contBytes += tamNomeEstacao;
+    if (tamnomeestacao > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
+        fwrite(nomeestacao, sizeof(char), tamnomeestacao, arqin);
+        contabytes += tamnomeestacao;
     }
-    //faremos o mesmo com o nomeLinha
-    if (strcmp(nomeLinha, "NULO") == 0 || strlen(nomeLinha) == 0) {
-        tamNomeLinha = 0; // se for nulo, o tamanho é 0
+    //faremos o mesmo com o nomelinha
+    if (strcmp(nomelinha, "NULO") == 0 || strlen(nomelinha) == 0) {
+        tamnomelinha = 0; // se for nulo, o tamanho é 0
     } else {
-        tamNomeLinha = strlen(nomeLinha); // se nao for, guardamos na variavel
+        tamnomelinha = strlen(nomelinha); // se nao for, guardamos na variavel
     }
 
-    fwrite(&tamNomeLinha, sizeof(int), 1, arqin); //escrevemos o tamanho da string
-    contBytes += 4;
+    fwrite(&tamnomelinha, sizeof(int), 1, arqin); //escrevemos o tamanho da string
+    contabytes += 4;
 
-    if (tamNomeLinha > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
-        fwrite(nomeLinha, sizeof(char), tamNomeLinha, arqin);
-        contBytes += tamNomeLinha;
+    if (tamnomelinha > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
+        fwrite(nomelinha, sizeof(char), tamnomelinha, arqin);
+        contabytes += tamnomelinha;
     }
     char lixo = '$'; //o espaço restante, preencheremos com $
-    while (contBytes < 80)
+    while (contabytes < 80)
     {
         fwrite(&lixo, sizeof(char), 1, arqin);
-        contBytes++;
+        contabytes++;
     }
 }
 
 void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //funcao que pega as atualizacoes (criteriosAtt) e escreve no registro
     for (int i = 0; i < atts; i++) { //esse loop deve se repetir para cada atualizacao de campo que vamos fazer
-        char *campo = criteriosAtt[i]->nomeCampo; //guardaremos aqui qual o nome do campo
-        char *valor = criteriosAtt[i]->valorCampo; //e aqui o valor armazenado nesse campo
+        char *campo = criteriosAtt[i]->nomecampo; //guardaremos aqui qual o nome do campo
+        char *valor = criteriosAtt[i]->valorcampo; //e aqui o valor armazenado nesse campo
 
-        if (strcmp(campo, "nomeEstacao") == 0) { //devemos tratar do caso especial em que o campo em questao seja o nomeEstacao, pois é uma string de tamanho variavel, nao basta apenas substituir o que ha li
-            if (registro->nomeEstacao != NULL) { //como essa string de tamanho variavel usa alocacao dinamica, liberamos esse espaço ocupado
-                free(registro->nomeEstacao);
+        if (strcmp(campo, "nomeEstacao") == 0) { //devemos tratar do caso especial em que o campo em questao seja o nomeestacao, pois é uma string de tamanho variavel, nao basta apenas substituir o que ha li
+            if (registro->nomeestacao != NULL) { //como essa string de tamanho variavel usa alocacao dinamica, liberamos esse espaço ocupado
+                free(registro->nomeestacao);
             }
             
             if (strcmp(valor, "NULO") == 0) { //se tivermos que ocupar esse campo com NULO, nao deve haver nada ali e seu tamanho sera 0
-                registro->tamNomeEstacao = 0;
-                registro->nomeEstacao = NULL;
+                registro->tamnomeestacao = 0;
+                registro->nomeestacao = NULL;
             } else { //para qualquer outro caso, apenas atualizamos o valor do campo e seu tamanho
-                registro->tamNomeEstacao = strlen(valor);
-                registro->nomeEstacao = malloc((registro->tamNomeEstacao + 1) * sizeof(char));
-                strcpy(registro->nomeEstacao, valor);
+                registro->tamnomeestacao = strlen(valor);
+                registro->nomeestacao = malloc((registro->tamnomeestacao + 1) * sizeof(char));
+                strcpy(registro->nomeestacao, valor);
             }
         } 
-        else if (strcmp(campo, "nomeLinha") == 0) { //a mesma logica do nomeEstacao se aplica ao nomeLinha
-            if (registro->nomeLinha != NULL) {
-                free(registro->nomeLinha);
+        else if (strcmp(campo, "nomeLinha") == 0) { //a mesma logica do nomeestacao se aplica ao nomelinha
+            if (registro->nomelinha != NULL) {
+                free(registro->nomelinha);
             }
             
             if (strcmp(valor, "NULO") == 0) {
-                registro->tamNomeLinha = 0;
-                registro->nomeLinha = NULL;
+                registro->tamnomelinha = 0;
+                registro->nomelinha = NULL;
             } else {
-                registro->tamNomeLinha = strlen(valor);
-                registro->nomeLinha = malloc((registro->tamNomeLinha + 1) * sizeof(char));
-                strcpy(registro->nomeLinha, valor);
+                registro->tamnomelinha = strlen(valor);
+                registro->nomelinha = malloc((registro->tamnomelinha + 1) * sizeof(char));
+                strcpy(registro->nomelinha, valor);
             }
         }
         else if (strcmp(campo, "codEstacao") == 0) { //ja para o caso de quaisquer outros campos, usamos apenas a logica de substituicao
             if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
-                registro->codEstacao = -1;
+                registro->codestacao = -1;
             }
             else {          //se nao, inserimos o valor em int (atoi)
-                registro->codEstacao = atoi(valor);
+                registro->codestacao = atoi(valor);
             }
         
         } 
         else if (strcmp(campo, "codLinha") == 0) {
              if (strcmp(valor, "NULO") == 0) {
-                registro->codLinha = -1;
+                registro->codlinha = -1;
             }
             else {         
-                registro->codLinha = atoi(valor);
+                registro->codlinha = atoi(valor);
             }
         } 
         else if (strcmp(campo, "codProxEstacao") == 0) {
              if (strcmp(valor, "NULO") == 0) {
-                registro->codProxEstacao = -1;
+                registro->codproxestacao = -1;
             }
             else {   
-                registro->codProxEstacao = atoi(valor);
+                registro->codproxestacao = atoi(valor);
             }
         } 
         else if (strcmp(campo, "distProxEstacao") == 0) {
             if (strcmp(valor, "NULO") == 0) {
-                registro->distProxEstacao = -1;
+                registro->distproxestacao = -1;
             }
             else {          
-                registro->distProxEstacao = atoi(valor);
+                registro->distproxestacao = atoi(valor);
             }
         } 
         else if (strcmp(campo, "codLinhaIntegra") == 0) {
             if (strcmp(valor, "NULO") == 0) {
-                registro->codLinhaIntegra = -1;
+                registro->codlinhaintegra = -1;
             }
             else {        
-                registro->codLinhaIntegra = atoi(valor);
+                registro->codlinhaintegra = atoi(valor);
             }
         } 
         else if (strcmp(campo, "codEstIntegra") == 0) {
             if (strcmp(valor, "NULO") == 0) {
-                registro->codEstIntegra = -1;
+                registro->codestintegra = -1;
             }
             else {          
-                registro->codEstIntegra = atoi(valor);
+                registro->codestintegra = atoi(valor);
             }
         }
     }
 }
 
-void contarEstacoesEPares(FILE *arqin, int *nroEstacoes, int *nroParesEstacao) {
-    char *listaNomes[10000];
-    int contaNomes = 0; //esta variável vai guardar quantos nomes unicos ja encontramos
-    int listaEstacao[10000], listaProx[10000]; //vamos guardar aqui os codEstacao e os codProxEstacao
-    int contaPares = 0;
-
+void contarEstacoesEPares(FILE *arqin, int *nroestacoes, int *nroparesestacao)
+{
+    char *listanomes[10000];
+    int contanomes = 0; //esta variável vai guardar quantos nomes unicos ja encontramos
+    int listaestacao[10000], listaprox[10000]; //vamos guardar aqui os codestacao e os codproxestacao
+    int contapares = 0;
     fseek(arqin, 17, SEEK_SET); //vamos começar a leitura após o cabeçalho 
     
     char temp;
@@ -615,48 +633,48 @@ void contarEstacoesEPares(FILE *arqin, int *nroEstacoes, int *nroParesEstacao) {
         REGISTRO *registro = recordFromBin(arqin); //vamos guardar o registro em "registro"
         if (registro != NULL)  //como o recordFromBin devolve NULL para registros com status removidos, devemos ver se o registro não foi removido
         {
-            int existeNome = 0;    //começamos assumindo que ainda nao vimos o nome
-            for (int i = 0; i < contaNomes; i++) 
+            int existenome = 0;    //começamos assumindo que ainda nao vimos o nome
+            for (int i = 0; i < contanomes; i++) 
             {
-                if (strcmp(registro->nomeEstacao, listaNomes[i]) == 0) 
+                if (strcmp(registro->nomeestacao, listanomes[i]) == 0) 
                 { 
-                    existeNome = 1; //se o nome da estacao lido ja estiver na lista de nomes, entao o nome ja existia e mudamos o existeNome
+                    existenome = 1; //se o nome da estacao lido ja estiver na lista de nomes, entao o nome ja existia e mudamos o existenome
                     break;
                 }
             }
-            if (existeNome == 0)  //se o existeNome continua sendo 0, entao temos aqui um nome novo, que deve ser anotado na listaNomes
+            if (existenome == 0)  //se o existenome continua sendo 0, entao temos aqui um nome novo, que deve ser anotado na listanomes
             {
-                listaNomes[contaNomes] = (char *)malloc((strlen(registro->nomeEstacao) + 1) * sizeof(char)); //alocamos espaço para escrever na listaNomes
-                strcpy(listaNomes[contaNomes], registro->nomeEstacao);
-                contaNomes++; 
+                listanomes[contanomes] = (char *)malloc((strlen(registro->nomeestacao) + 1) * sizeof(char)); //alocamos espaço para escrever na listanomes
+                strcpy(listanomes[contanomes], registro->nomeestacao);
+                contanomes++; 
             }
             
-            int existePar = 0; //agora devemos contar os pares, seguindo a mesma logica
-            if (registro->codEstacao != -1 && registro->codProxEstacao != -1) 
+            int existepar = 0; //agora devemos contar os pares, seguindo a mesma logica
+            if (registro->codestacao != -1 && registro->codproxestacao != -1) 
             {
-                for (int i = 0; i < contaPares; i++)
+                for (int i = 0; i < contapares; i++)
                 {
-                    if (((registro->codEstacao == listaEstacao[i] && registro->codProxEstacao == listaProx[i]) || (registro->codEstacao == listaProx[i] && registro->codProxEstacao == listaEstacao[i])) && registro->codProxEstacao != -1) //se tivermos um par
+                    if (((registro->codestacao == listaestacao[i] && registro->codproxestacao == listaprox[i]) || (registro->codestacao == listaprox[i] && registro->codproxestacao == listaestacao[i])) && registro->codproxestacao != -1) //se tivermos um par
                     { 
-                        existePar = 1;
+                        existepar = 1;
                         break;
                     }
                 }
-                if (existePar == 0) //se o par nao existe, basta adicionar
+                if (existepar == 0) //se o par nao existe, basta adicionar
                 { 
-                    listaEstacao[contaPares] = registro->codEstacao;
-                    listaProx[contaPares] = registro->codProxEstacao;
-                    contaPares++;
+                    listaestacao[contapares] = registro->codestacao;
+                    listaprox[contapares] = registro->codproxestacao;
+                    contapares++;
                 }
             }
             deleteRecord(registro); 
         }
     }
-    *nroEstacoes = contaNomes; //o nroEstacoes vai guardar o numero de nomes unicos
-    *nroParesEstacao = contaPares; //o mesmo para o nroParesEstacao
-    for (int i = 0; i < contaNomes; i++)  //liberamos o espaço na listaNomes
+    *nroestacoes = contanomes; //o nroestacoes vai guardar o numero de nomes unicos
+    *nroparesestacao = contapares; //o mesmo para o nroparesestacao
+    for (int i = 0; i < contanomes; i++)  //liberamos o espaço na listanomes
     {
-            free(listaNomes[i]);
+            free(listanomes[i]);
     }
 }
 
