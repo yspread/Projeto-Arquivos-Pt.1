@@ -25,8 +25,9 @@ void readRecords(char *arqentrada, char *arqsaida){
     if (arqin == NULL)
     {
         printf("Falha no processamento do arquivo.");
+        deleteHeader(header);
         return;
-    }
+    }   
     FILE *arqout = fopen(arqsaida, "wb"); //abertura do arquivo de saida para escrita em binário
     changeHeaderStatus(header); //o arquivo foi aberto para escrita, status atualizado
     writeHeaderOnBin(header, arqout); //escrita dos 17 bytes do cabeçalho inicial que será posteriormente sobrescrito(posso escrever a struct inteira de uma vez, visto que todos os campos tem tamanho fixo)
