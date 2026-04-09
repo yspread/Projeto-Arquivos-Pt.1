@@ -210,7 +210,7 @@ void removeRecords(char *arqentrada, int n)  {
         {
             //int byteOffSetRegistro = ftell(arqin); //guardemos o byteoffset do registro
             registrotemp = recordFromBin(arqin, removido);
-            if (recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
+            if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
             {
                 //int rrnAtual = (byteOffSetRegistro - 17) / 80; //calculamos o rrn do byte offset do registro em questao
                 setProximo(registrotemp, getTopo(headertemp));//o campo "proximo" do registro removido recebe o rrn do antigo topo da pilha
