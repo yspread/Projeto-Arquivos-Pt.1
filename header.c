@@ -44,7 +44,6 @@ HEADER *headerFromBin(FILE *arqbin)
     fread(&nroestacoes, sizeof(int), 1, arqbin);
     fread(&nroparesestacao, sizeof(int), 1, arqbin);
     header = createHeader();
-    changeHeaderStatus(header);
     setTopo(header, topo);
     setProxRRN(header, proxRRN);
     setNroEstacoes(header, nroestacoes);

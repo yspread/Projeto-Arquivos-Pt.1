@@ -45,10 +45,7 @@ REGISTRO *createRecord(int codestacao, int codlinha, int codproxestacao, int dis
         registro->nomeestacao = malloc(registro->tamnomeestacao + 1); //precisamos alocar a memória com strlen + 1 para que haja espaço suficiente para o \0
         strcpy(registro->nomeestacao, nomeestacao);
         registro->tamnomelinha = strlen(nomelinha);
-        if (registro->tamnomelinha != 0)    //em caso do campo nomelinha ser nulo, não devemos alocar memória
-        {
-            registro->nomelinha = malloc(registro->tamnomelinha + 1);
-        }
+        registro->nomelinha = malloc(registro->tamnomelinha + 1);
         strcpy(registro->nomelinha, nomelinha);
     }
     return registro;
@@ -496,107 +493,6 @@ void removeRecord(REGISTRO *registro) {
     registro->removido = '1';
 }
 
-void escreverNoRegistro(FILE *arqin, char *codestacao, char *codlinha, char *codproxestacao, char *distproxestacao, char *codlinhaintegra, char *codestintegra, char *nomeestacao, char *nomelinha) {
-    char zero ='0';
-    int menosum = -1;
-    int tamnomeestacao;
-    int tamnomelinha;
-    int contabytes = 0; //vamos usar essas variavel para contar os bytes (do max de 80) do registro. no fim, o restante nao preenchido
-                     // sera preenchido com $
-    fwrite(&zero, sizeof(char), 1, arqin); //como o primeiro campo indica remocao, é inicializado com 0
-    contabytes++; //como é um char, avançamos 1 byte na contagem
-    fwrite(&menosum, sizeof(int), 1, arqin); //o segundo campo deve ser incializado com -1
-    contabytes += 4; //como esse campo é um int, avançamos 4 bytes
-    if (strcmp(codestacao, "NULO") == 0) { //se o codestacao for NULO, marcamos o campo como -1
-        fwrite(&menosum, sizeof(int),1,arqin);
-    }
-    else { //se nao for nulo, marcamos como o input lido
-        int valoremint = atoi(codestacao); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valoremint, sizeof(int), 1, arqin);
-    }
-
-    if (strcmp(codlinha, "NULO") == 0) { //se o codlinha for NULO, marcamos o campo como -1
-        fwrite(&menosum, sizeof(int),1,arqin);
-    }
-    else { //se nao for nulo, marcamos como o input lido
-        int valoremint = atoi(codlinha); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valoremint, sizeof(int), 1, arqin);
-    }
-
-    if (strcmp(codproxestacao, "NULO") == 0) { //se o codproxestacao for NULO, marcamos o campo como -1
-        fwrite(&menosum, sizeof(int),1,arqin);
-    }
-    else { //se nao for nulo, marcamos como o input lido
-        int valoremint = atoi(codproxestacao); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valoremint, sizeof(int), 1, arqin);
-    }
-
-    if (strcmp(distproxestacao, "NULO") == 0) 
-    { //se o distproxestacao for NULO, marcamos o campo como -1
-        fwrite(&menosum, sizeof(int),1,arqin);
-    }
-    else 
-    { //se nao for nulo, marcamos como o input lido
-        int valoremint = atoi(distproxestacao); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valoremint, sizeof(int), 1, arqin);
-    }
-
-    if (strcmp(codlinhaintegra, "NULO") == 0) 
-    { //se o codlinhaintegra for NULO, marcamos o campo como -1
-        fwrite(&menosum, sizeof(int),1,arqin);
-    }
-    else 
-    { //se nao for nulo, marcamos como o input lido
-        int valoremint = atoi(codlinhaintegra); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valoremint, sizeof(int), 1, arqin);
-    }
-
-    if (strcmp(codestintegra, "NULO") == 0) 
-    { //se o codestintegra for NULO, marcamos o campo como -1
-        fwrite(&menosum, sizeof(int),1,arqin);
-    }
-    else 
-    { //se nao for nulo, marcamos como o input lido
-        int valoremint = atoi(codestintegra); //usamos isso para transformar o numero lido como string em int
-        fwrite(&valoremint, sizeof(int), 1, arqin);
-    }
-    contabytes += 24; // 6 campos * 4 bytes = 24 bytes contados. Mesmo que os registros sejam nulos, seus tamanhos ainda sao de 4 bytes
-
-    if (strcmp(nomeestacao, "NULO") == 0 || strlen(nomeestacao) == 0) {
-        tamnomeestacao = 0; // se for nulo, o tamanho é 0
-    } else {
-        tamnomeestacao = strlen(nomeestacao); // se nao for, guardamos na variavel
-    }
-
-    fwrite(&tamnomeestacao, sizeof(int), 1, arqin); //escrevemos o tamanho da string
-    contabytes += 4;
-
-    if (tamnomeestacao > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
-        fwrite(nomeestacao, sizeof(char), tamnomeestacao, arqin);
-        contabytes += tamnomeestacao;
-    }
-    //faremos o mesmo com o nomelinha
-    if (strcmp(nomelinha, "NULO") == 0 || strlen(nomelinha) == 0) {
-        tamnomelinha = 0; // se for nulo, o tamanho é 0
-    } else {
-        tamnomelinha = strlen(nomelinha); // se nao for, guardamos na variavel
-    }
-
-    fwrite(&tamnomelinha, sizeof(int), 1, arqin); //escrevemos o tamanho da string
-    contabytes += 4;
-
-    if (tamnomelinha > 0) { //se o tamanho for maior que 0 anotamos o nome da estacao
-        fwrite(nomelinha, sizeof(char), tamnomelinha, arqin);
-        contabytes += tamnomelinha;
-    }
-    char lixo = '$'; //o espaço restante, preencheremos com $
-    while (contabytes < 80)
-    {
-        fwrite(&lixo, sizeof(char), 1, arqin);
-        contabytes++;
-    }
-}
-
 void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //funcao que pega as atualizacoes (criteriosAtt) e escreve no registro
     for (int i = 0; i < atts; i++) { //esse loop deve se repetir para cada atualizacao de campo que vamos fazer
         char *campo = criteriosAtt[i]->nomecampo; //guardaremos aqui qual o nome do campo
@@ -692,8 +588,7 @@ void contarEstacoesEPares(FILE *arqin, int *nroestacoes, int *nroparesestacao)
     
     char removido;
     while (fread(&removido, sizeof(char), 1, arqin))  //só paramos se chegarmos ao fim do arquivo
-    { 
-        fseek(arqin, -1, SEEK_CUR); 
+    {  
         REGISTRO *registro = recordFromBin(arqin, removido); //vamos guardar o registro em "registro"
         if (registro != NULL)  //como o recordFromBin devolve NULL para registros com status removidos, devemos ver se o registro não foi removido
         {
