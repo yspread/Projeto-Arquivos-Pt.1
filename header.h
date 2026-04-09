@@ -7,6 +7,7 @@
 
     HEADER *createHeader(); //função para criar o cabeçalho do arquivo
     void deleteHeader(HEADER *header); //função para apagar o cabeçalho da memória
+    HEADER *headerFromBin(FILE *arqbin); //função para ler a header de um arquivo binário
     void writeHeaderOnBin(HEADER *header, FILE *arqbin); //escreve os dados do cabeçalho em um arquivo binário
 
     //funções para alterar valores de campos da header

@@ -19,7 +19,10 @@ run:
 clean:
 	rm -f *.o
 	rm -f main
-	rm -f main.exe
+	rm -f main.exe *.zip
 
 checkmem:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -s ./main
+
+zip:	
+	zip -r trabalho.zip *.c *.h makefile 

@@ -95,14 +95,18 @@ void readRecords(char *arqentrada, char *arqsaida){
             listanomesestacoes[i] = NULL;
         }
     }
-    fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
+    
     changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
     setNroEstacoes(header, contanomes); //atualizo o valor de header->nroEstacoes
     setNroParesEstacao(header, contapares); //atualizo o valor de header->nroParesEstacao
+    
+    fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
     writeHeaderOnBin(header, arqout); //sobrescrevo a header antiga com os novos dados da header
+    deleteHeader(header);
+    
     fclose(arqin);
     fclose(arqout);
-    deleteHeader(header);
+    
     BinarioNaTela(arqsaida);
     return;
 }
@@ -112,7 +116,7 @@ void readRecords(char *arqentrada, char *arqsaida){
 Vamos ler um registro por vez e printá-lo*/
 void showRecords(char *arqentrada)
 {
-    char temp; //variável temporária, só serve para ser usada no fread do loop,
+    char removido; //indica se o registro está removido ou não
     REGISTRO *registrotemp;
     FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lido
     if (arqin == NULL)
@@ -121,10 +125,9 @@ void showRecords(char *arqentrada)
         return;
     }
     fseek(arqin, 17, SEEK_SET); //ponteiro pula o cabeçalho, não será útil para a impressão dos registros
-    while (fread(&temp, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
+    while (fread(&removido, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
     {
-        fseek(arqin, -1, SEEK_CUR); //volto um byte com o ponteiro do arquivo para que os registros sejam lidos adequadamente com a função RecordFromBin
-        registrotemp = recordFromBin(arqin); //crio registro temporário com os dados retirados do arquivo binário
+        registrotemp = recordFromBin(arqin, removido); //crio registro temporário com os dados retirados do arquivo binário
         printRecord(registrotemp); //imprimo o registro se ele não tiver sido logicamente removido
         if (registrotemp != NULL)
         {
@@ -148,32 +151,18 @@ void filterRecords(char *arqentrada, int n)
     }
     int m;
     REGISTRO *registrotemp;
-    char nomecampo[256];
-    char valorcampo[256];
-    char temp;
+    char removido;
     for (int i = 0; i < n; i++)
     {
         int achoualgum = 0;
         fseek(arqin, 17, SEEK_SET); //pulo o cabeçalho pra ir direto pro primeiro registro a cada busca
         scanf("%d", &m);
-        CRITERIOS *criterios[m]; //vetor de structs que vai armazenar cada um dos critérios de busca
-        for (int j = 0; j < m; j++)
-        {
-            scanf("%s", nomecampo);
-            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0)
-            {
-                ScanQuoteString(valorcampo);
-            }
-            else
-            {
-                scanf("%s", valorcampo);
-            }
-            criterios[j] = createCriteria(nomecampo, valorcampo);
-        }
-        while(fread(&temp, sizeof(char), 1, arqin)) //verifica se o arquivo não acabou ainda
+        CRITERIOS *criterios[m];
+        readCriteria(m, criterios); //vetor de structs que vai armazenar cada um dos critérios de busca
+        
+        while(fread(&removido, sizeof(char), 1, arqin)) //verifica se o arquivo não acabou ainda
         {   
-            fseek(arqin, -1, SEEK_CUR);
-            registrotemp = recordFromBin(arqin);//leio um registro 
+            registrotemp = recordFromBin(arqin, removido);//leio um registro 
             if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criterios))//se o registro atender aos criterios de busca e não estiver logicamente removido ele é printado
             {
                 printRecord(registrotemp);
@@ -188,10 +177,7 @@ void filterRecords(char *arqentrada, int n)
         {
             deleteCriteria(criterios[j]);
         }
-        if (achoualgum == 0)
-        {
-            printf("Registro inexistente.\n");
-        }
+        if(achoualgum == 0) printf("Registro inexistente.\n");
         printf("\n");
     }
     fclose(arqin);
@@ -207,51 +193,33 @@ void removeRecords(char *arqentrada, int n)  {
         printf("Falha no processamento do arquivo.");
         return;
     }
-    HEADER *headertemp = createHeader(); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
-    changeHeaderStatus(headertemp); //mudamos o status da header
-    fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
-    int atualTopo, atualProxRRN; 
-    fread(&atualTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
-    fread(&atualProxRRN, sizeof(int), 1, arqin); //o mesmo para o proxRRN
-    setTopo(headertemp, atualTopo);
-    setProxRRN(headertemp, atualProxRRN);
+    HEADER *headertemp = headerFromBin(arqin); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
     int m;
-    char temp;
-    char nomecampo[256];
-    char valorcampo[256];
-    char *stringtemp;
+    char removido;
     REGISTRO *registrotemp;
-    fseek(arqin, 17, SEEK_SET);
     for (int i=0; i< n; i++)
     {
         scanf("%d", &m);
         CRITERIOS *criteriosBusca[m];
-        for (int j = 0; j < m; j++)
-        {
-            scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
-            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
-                ScanQuoteString(valorcampo);
-            }
-            else { //se nao for, nao está entre aspas e usamos scanf normal
-                scanf("%s", valorcampo);
-            }
-            criteriosBusca[j] = createCriteria(nomecampo, valorcampo);
-        }
+        readCriteria(m, criteriosBusca);
+
         fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
-        while(fread(&temp, sizeof(char), 1, arqin))
+        int countrrn = 0; //conta o rrn do registro em que estamos operando
+        while(fread(&removido, sizeof(char), 1, arqin))
         {
-            fseek(arqin, -1, SEEK_CUR);
-            int byteOffSetRegistro = ftell(arqin); //guardemos o byteoffset do registro
-            registrotemp = recordFromBin(arqin);
+            //int byteOffSetRegistro = ftell(arqin); //guardemos o byteoffset do registro
+            registrotemp = recordFromBin(arqin, removido);
             if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) //verificamos se o registro bate com o criterio imposto pelo usuario
             {
-                int rrnAtual = (byteOffSetRegistro - 17) / 80; //calculamos o rrn do byte offset do registro em questao
+                //int rrnAtual = (byteOffSetRegistro - 17) / 80; //calculamos o rrn do byte offset do registro em questao
                 setProximo(registrotemp, getTopo(headertemp));//o campo "proximo" do registro removido recebe o rrn do antigo topo da pilha
-                setTopo(headertemp, rrnAtual); //atualizamos o topo do cabecalho
+                //setTopo(headertemp, rrnAtual); //atualizamos o topo do cabecalho
+                setTopo(headertemp, countrrn);
                 removeRecord(registrotemp);
-                fseek(arqin, byteOffSetRegistro, SEEK_SET);  //voltamos para o inicio do registro e gravamos o registro atualizado
+                fseek(arqin, -80, SEEK_CUR);  //voltamos para o inicio do registro e gravamos o registro atualizado
                 writeRecordOnBin(registrotemp, arqin); 
             }
+            countrrn++;
             if (registrotemp != NULL) { //podemos nos livrar do registrotemp
                 deleteRecord(registrotemp);
             }
@@ -284,17 +252,10 @@ void insertRecords(char *arqentrada, int n) {
         return;
     }
     //vamos usar a mesma tecnica de header temporaria usada na funcionalidade 4 (removeRecords) para guaradar o topo e o proxRRN
-    HEADER *headertemp = createHeader(); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
-    changeHeaderStatus(headertemp); 
-    fseek(arqin, 1, SEEK_SET); //vamos para o campo topo do cabeçalho
-    int atualTopo, atualproxRRN; 
-    fread(&atualTopo, sizeof(int), 1, arqin); //vamos armazenar o atual topo do cabeçalho para colocar no campo topo do headertemp 
-    fread(&atualproxRRN, sizeof(int), 1, arqin); //vamos fazer o mesmo com o proxRRN. No fim da função vamos botar isso tudo na header principal
-    setTopo(headertemp, atualTopo);
-    setProxRRN(headertemp, atualproxRRN);
-
-    for (int i=0; i< n; i++) { //loop que escaneia e insere n vezes
-        char codEstacao[50];
+    HEADER *header = headerFromBin(arqin);
+    REGISTRO *registrotemp;
+    for (int i=0; i < n; i++) { //loop que escaneia e insere n vezes
+        /*char codEstacao[50];
         char codLinha[50];
         char codProxEstacao[50];
         char distProxEstacao[50];
@@ -309,19 +270,20 @@ void insertRecords(char *arqentrada, int n) {
         scanf("%s", codProxEstacao);
         scanf("%s", distProxEstacao);
         scanf("%s", codLinhaIntegra);
-        scanf("%s", codEstIntegra);
+        scanf("%s", codEstIntegra);*/
+        registrotemp = recordFromInput();
 
-        if (atualTopo == -1) { //se nao ha topo, entao nao ha registross removidos.A insercao ocorre no byte offset do proxRRN
-            int byteOffSetproxRRN = atualproxRRN * 80 + 17; //devemos achar o byte offset do proxRRN para fazer a insercao
+        if (getTopo(header) == -1) { //se nao ha topo, entao nao ha registross removidos.A insercao ocorre no byte offset do proxRRN
+            int byteOffSetproxRRN = getProxRRN(header) * 80 + 17; //devemos achar o byte offset do proxRRN para fazer a insercao
             fseek(arqin, byteOffSetproxRRN, SEEK_SET); //movemos o cursor para la
-            escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
-            setProxRRN(headertemp, getProxRRN(headertemp) + 1); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
-            atualproxRRN++; //sobe a contagem
+            //escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha);
+            writeRecordOnBin(registrotemp, arqin);
+            setProxRRN(header, getProxRRN(header) + 1); //como inserimos no fim do arquivo, devemos incrementar o campo proxRRN do cabeçalho 
         }
         else { //se topo !=1, entao ha registros removidos. Devemos usar a pilha de registros removidos para achar esses espaços vazios e inserir ali
             //como a pilha se da pelo campo "proximo" dos registros, devemos pegar o "proximo" do topo, tornar esse proximo o novo topo e 
             //escrever o novo registro no antigo topo
-            int byteOffsetBuraco = atualTopo * 80 + 17; //vamos guardar o byte offset do "buraco" de memoria
+            int byteOffsetBuraco = getTopo(header) * 80 + 17; //vamos guardar o byte offset do "buraco" de memoria
             int proxAntigoTopo; //vamos guardar nesta variavel o campo "proximo" daquele que é o atual (mas logo será o antigo) topo da pilha de removidos
             fseek(arqin, byteOffsetBuraco+1, SEEK_SET); //movemos o cursor para a posicao do campo "proximo" do topo
             fread(&proxAntigoTopo, sizeof(int), 1, arqin); //lemos o RRN que estava ali e guardamos na variavel proxAntigoTopo
@@ -331,21 +293,21 @@ void insertRecords(char *arqentrada, int n) {
             } else {  //se nao, é o prox do antigo topo
                 novoTopo = proxAntigoTopo; 
             }
-            setTopo(headertemp, novoTopo); //esse byte offset é o novo topo da pilha. Botamos ele no campo "topo" da header temporaria
+            setTopo(header, novoTopo); //esse byte offset é o novo topo da pilha. Botamos ele no campo "topo" da header temporaria
             fseek(arqin, byteOffsetBuraco, SEEK_SET); //aqui botamos o cursor no byte offset do antigo topo da pilha de removidos. É aqui que vamos escrever o novo registro
-            escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha) ;
-            atualTopo = novoTopo; //o novo topo agora é o atual topo com o qual trabalharemos
+            //escreverNoRegistro(arqin, codEstacao, codLinha, codProxEstacao, distProxEstacao, codLinhaIntegra, codEstIntegra, nomeEstacao, nomeLinha) ;
+            writeRecordOnBin(registrotemp, arqin);
         }
     }
     int nroEstacoes, nroPares;
     fseek(arqin, 17, SEEK_SET);
     contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
-    setNroEstacoes(headertemp, nroEstacoes); //colocamos o novo numero de estações na headertemp
-    setNroParesEstacao(headertemp, nroPares); //o mesmo para o numero de pares de estacao
-    changeHeaderStatus(headertemp);
+    setNroEstacoes(header, nroEstacoes); //colocamos o novo numero de estações na headertemp
+    setNroParesEstacao(header, nroPares); //o mesmo para o numero de pares de estacao
+    changeHeaderStatus(header);
     fseek(arqin, 0, SEEK_SET); //hora de atualizar a header principal 
-    writeHeaderOnBin(headertemp, arqin); //escrevemos a header temporaria na header principal
-    deleteHeader(headertemp); //agora podemos liberar a memoria da headertemp
+    writeHeaderOnBin(header, arqin); //escrevemos a header temporaria na header principal
+    deleteHeader(header); //agora podemos liberar a memoria da headertemp
     fclose(arqin);
     BinarioNaTela(arqentrada);
 }
@@ -361,53 +323,29 @@ void updateRecords(char *arqentrada, int n) {
     }
     fwrite("1", sizeof(char),1,arqin);
     int m;
-    char nomecampo[256];
-    char valorcampo[256];
-    char temp;
+    char removido;
     char *stringtemp;
     REGISTRO *registrotemp;
     fseek(arqin, 17, SEEK_SET);
     for (int i=0; i< n; i++)
     {
         scanf("%d", &m);
-        CRITERIOS *criteriosBusca[m]; 
-        for (int j = 0; j < m; j++)
-        {
-            scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
-            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
-                ScanQuoteString(valorcampo);
-            }
-            else { //se nao for, nao está entre aspas e usamos scanf normal
-                scanf("%s", valorcampo);
-            }
-            criteriosBusca[j] = createCriteria(nomecampo, valorcampo);
-        }
+        CRITERIOS *criteriosBusca[m];
+        readCriteria(m, criteriosBusca); 
         int atts; //numero de atualizacoes para aquela linha (o "p" no exemplo do pdf)
         scanf("%d", &atts);  
-        CRITERIOS *criteriosAtt[atts]; //vamos guardar as atualizacoes aqui
-        for (int j = 0; j < atts; j++)  //vamos guardar uma atualizacao para cada att (numero de atualizacoes)
-        {
-            scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
-            if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
-                ScanQuoteString(valorcampo);
-            }
-            else { //se nao for, nao está entre aspas e usamos scanf normal
-                scanf("%s", valorcampo);
-            }
-            criteriosAtt[j] = createCriteria(nomecampo, valorcampo);
-        }
+        CRITERIOS *criteriosAtt[m];
+        readCriteria(atts, criteriosAtt); //vamos guardar as atualizacoes aqui
 
         fseek(arqin, 17, SEEK_SET); //antes de cada busca, devemos voltar ao primeiro registro pos-cabecalho
-        while(fread(&temp, sizeof(char), 1, arqin))
+        while(fread(&removido, sizeof(char), 1, arqin))
         {
-            fseek(arqin, -1, SEEK_CUR);
             int byteOffSetRegistro = ftell(arqin); //vamos guardar este byte offset para caso este seja o registro que atualizaremos
-            registrotemp = recordFromBin(arqin); //guardaremos o registro lido em registrotemp (que sera usado para ver se os criterios batem)
+            registrotemp = recordFromBin(arqin, removido); //guardaremos o registro lido em registrotemp (que sera usado para ver se os criterios batem)
             if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) { //verificamos se o registro bate com o criterio imposto pelo usuario
                 atualizarCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para armazenar as atualizações no registrotemp
                 fseek(arqin, byteOffSetRegistro, SEEK_SET); //vamos mover o curso para o byte offset do registro a ser atualizado
                 writeRecordOnBin(registrotemp, arqin); //escrevemos o registro atualizado ali
-                fflush(arqin);
             }
             if (registrotemp != NULL) //desaloco a memória alocada para o registro temporário
             {

@@ -32,6 +32,26 @@ void deleteHeader(HEADER *header)
     header = NULL;
 }
 
+//função para se criar um header e inicializar seus dados com base num header lido de um registro
+HEADER *headerFromBin(FILE *arqbin)
+{
+    HEADER *header;
+    char status;
+    int topo, proxRRN, nroestacoes, nroparesestacao;
+    fread(&status, sizeof(char), 1, arqbin);
+    fread(&topo, sizeof(int), 1, arqbin);
+    fread(&proxRRN, sizeof(int), 1, arqbin);
+    fread(&nroestacoes, sizeof(int), 1, arqbin);
+    fread(&nroparesestacao, sizeof(int), 1, arqbin);
+    header = createHeader();
+    changeHeaderStatus(header);
+    setTopo(header, topo);
+    setProxRRN(header, proxRRN);
+    setNroEstacoes(header, nroestacoes);
+    setNroParesEstacao(header, nroparesestacao);
+    return header;
+}
+
 //escreve os campos da header em um arquivo binário
 void writeHeaderOnBin(HEADER *header, FILE *arqbin)
 {

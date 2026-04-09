@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "registros.h"
+#include "fornecidas.h"
 
 typedef struct registro_{
     //campos de tamanho fixo
@@ -71,18 +72,14 @@ void deleteRecord(REGISTRO *registro)
 CRITERIOS *createCriteria(char *nomecampo, char *valorcampo)
 {
     CRITERIOS *criterios = malloc(sizeof(CRITERIOS));
-    if (criterios != NULL)
-    {
-        criterios->nomecampo = malloc(strlen(nomecampo)+1);
-        strcpy(criterios->nomecampo, nomecampo);
-        criterios->valorcampo = malloc(strlen(valorcampo)+1);
-        strcpy(criterios->valorcampo, valorcampo);
-        return criterios;
-    }
-    else
-    {
+    if (criterios == NULL){
         return NULL;
-    }
+    }  
+    criterios->nomecampo = malloc(strlen(nomecampo)+1);
+    strcpy(criterios->nomecampo, nomecampo);
+    criterios->valorcampo = malloc(strlen(valorcampo)+1);
+    strcpy(criterios->valorcampo, valorcampo);
+    return criterios;
 }
 
 // libera a memória alocada para a struct de critérios de busca
@@ -97,6 +94,23 @@ void deleteCriteria(CRITERIOS *criterios)
     }
     free(criterios);
     criterios = NULL;
+}
+
+//função que le todos os critérios de uma busca e devolve o array de structs
+void readCriteria(int m, CRITERIOS **criterios)
+{
+    char nomecampo[30], valorcampo[30]; 
+    for (int j = 0; j < m; j++)
+    {
+        scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
+        if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
+            ScanQuoteString(valorcampo);
+        }
+        else { //se nao for, nao está entre aspas e usamos scanf normal
+            scanf("%s", valorcampo);
+        }
+        criterios[j] = createCriteria(nomecampo, valorcampo);
+    }
 }
 
 //essa função pega uma linha do csv, separa em tokens e utiliza esses tokens pra criar um registro, direcionando os tokens para os campos do registro correspondentes
@@ -145,10 +159,8 @@ REGISTRO *recordFromCSV(char *buffer)
 }
 
 //le os bytes de um registro salvo num arquivo binário e transforma em um uma struct registro
-REGISTRO *recordFromBin(FILE *arqbin)
+REGISTRO *recordFromBin(FILE *arqbin, char removido)
 {
-    char removido;   
-    fread(&removido, sizeof(char), 1, arqbin);
     if (removido == '1') //registro está logicamente removido, não deve ser considerado
     {
         fseek(arqbin, 79, SEEK_CUR); //o ponteiro vai para o offset do próximo registro
@@ -166,23 +178,75 @@ REGISTRO *recordFromBin(FILE *arqbin)
         fread(&distproxest, sizeof(int), 1, arqbin);
         fread(&codlinhaintegra, sizeof(int), 1, arqbin);
         fread(&codestintegra, sizeof(int), 1, arqbin);
+
         fread(&tamnomeestacao, sizeof(int), 1, arqbin);
         char *nomeestacao = (char *)malloc(tamnomeestacao + 1); //alocação dinamica para a variavel local
         fread(nomeestacao, tamnomeestacao, 1, arqbin);
         fread(&tamnomelinha, sizeof(int), 1, arqbin);
         char *nomelinha = (char *)malloc(tamnomelinha + 1);
         fread(nomelinha, tamnomelinha, 1, arqbin);
+
         nomeestacao[tamnomeestacao] = '\0'; //adiciona o '\0' ao final das strings, já que elas estavam salvas sem ele no binário
         nomelinha[tamnomelinha] = '\0';
+        
         int lixo = 80 - (tamnomelinha + tamnomeestacao + 37); //calculo da quantidade de lixo que deverá ser pulada para colocar o ponteiro do arquivo no offset do próximo registro
         fseek(arqbin, lixo, SEEK_CUR); //ponteiro direcionado para o offset do proximo registro
+        
         REGISTRO *registro = createRecord(codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra, nomeestacao, nomelinha);
+        
         free(nomelinha); //liberando espaço alocado para as variáveis locais
         nomelinha = NULL;
         free(nomeestacao);
         nomeestacao = NULL;
+
         return registro; //registro criado com os dados lidos
     }
+}
+
+//le as informações de um registro inseridas por um usuário e cria o registro
+REGISTRO *recordFromInput()
+{
+    int codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra; //todos os campos que serão lidos do input
+    char nomeestacao[30], nomelinha[30], stringtemp[30]; //stringtemp armazenará cada uma das strings lidas, isso é necessário quando o campo pode valer NULO
+    scanf("%d", &codestacao);
+    ScanQuoteString(nomeestacao);
+    scanf("%s", stringtemp);
+    if (strcmp(stringtemp, "NULO") == 0)
+    {
+        codlinha = -1;
+    }
+    else codlinha = atoi(stringtemp);
+    ScanQuoteString(nomelinha);
+    if (strcmp(nomelinha, "NULO") == 0)
+    {
+        nomelinha[0] = '\0';
+    }
+    scanf("%s", stringtemp);
+    if (strcmp(stringtemp, "NULO") == 0)
+    {
+        codproxest = -1;
+    }
+    else codproxest = atoi(stringtemp);
+    scanf("%s", stringtemp);
+    if (strcmp(stringtemp, "NULO") == 0)
+    {
+        distproxest = -1;
+    }
+    else distproxest = atoi(stringtemp);
+    scanf("%s", stringtemp);
+    if (strcmp(stringtemp, "NULO") == 0)
+    {
+        codlinhaintegra = -1;
+    }
+    else codlinhaintegra = atoi(stringtemp);
+    scanf("%s", stringtemp);
+    if (strcmp(stringtemp, "NULO") == 0)
+    {
+        codestintegra = -1;
+    }
+    else codestintegra = atoi(stringtemp);
+    REGISTRO *registro = createRecord(codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra, nomeestacao, nomelinha);
+    return registro;
 }
 
 //escreve os dados de um regitro em um arquivo binário
@@ -626,11 +690,11 @@ void contarEstacoesEPares(FILE *arqin, int *nroestacoes, int *nroparesestacao)
     int contapares = 0;
     fseek(arqin, 17, SEEK_SET); //vamos começar a leitura após o cabeçalho 
     
-    char temp;
-    while (fread(&temp, sizeof(char), 1, arqin))  //só paramos se chegarmos ao fim do arquivo
+    char removido;
+    while (fread(&removido, sizeof(char), 1, arqin))  //só paramos se chegarmos ao fim do arquivo
     { 
         fseek(arqin, -1, SEEK_CUR); 
-        REGISTRO *registro = recordFromBin(arqin); //vamos guardar o registro em "registro"
+        REGISTRO *registro = recordFromBin(arqin, removido); //vamos guardar o registro em "registro"
         if (registro != NULL)  //como o recordFromBin devolve NULL para registros com status removidos, devemos ver se o registro não foi removido
         {
             int existenome = 0;    //começamos assumindo que ainda nao vimos o nome
