@@ -10,66 +10,72 @@
 e escreverá o cabeçalho e todos os registros de modo binário no arquivo "arqsaida"
 Para isso, vamos ler e escrever um registro por vez
 Inicialmente um cabeçalho placeholder será escrito no binário mas posteriormente ele será
-substituido por outro com os dados finais e corretos*/
+substituido por outro com os dados atualizados*/
 void readRecords(char *arqentrada, char *arqsaida)
 {
-    HEADER *header = createHeader(); //crio uma header que será preenchida conforme os registros são lidos
-    REGISTRO *registrotemp; //esse registro temporário armazenará o registro que vai ser escrito no binário
+    REGISTRO *registrotemp;
     char buffer[512]; //armazenará a linha que foi lida do csv
-    FILE *arqin = fopen(arqentrada, "r"); //abertura do arquivo de entrada para leitura
-    if (arqin == NULL)
-    {
-        printf("Falha no processamento do arquivo.");
-        deleteHeader(header);
+    
+    FILE *arqin = fopen(arqentrada, "r");
+    if (arqin == NULL){
+        printf("Falha no processamento do arquivo.\n");
         return;
     }   
-    FILE *arqout = fopen(arqsaida, "wb"); //abertura do arquivo de saida para escrita em binário
-    changeHeaderStatus(header); //o arquivo foi aberto para escrita, status atualizado
-    writeHeaderOnBin(header, arqout); //escrita dos 17 bytes do cabeçalho inicial que será posteriormente sobrescrito(posso escrever a struct inteira de uma vez, visto que todos os campos tem tamanho fixo)
+    FILE *arqout = fopen(arqsaida, "wb+");
+    
+    HEADER *header = createHeader();
+    changeHeaderStatus(header);
+    writeHeaderOnBin(header, arqout); //escrita de uma header placeholder no arquivo binário
+
     fgets(buffer, 512, arqin); //primeira linha deve ser ignorada
-    while (fgets(buffer, 512, arqin) != NULL) //enquanto não acaba o arquivo
-    {
-        registrotemp = recordFromCSV(buffer); //crio registro temporário com os valores presentes na linha
-        writeRecordOnBin(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
-        setProxRRN(header, (getProxRRN(header)+1));
+    while (fgets(buffer, 512, arqin) != NULL){
+        registrotemp = recordFromCSV(buffer);
+        writeRecordOnBin(registrotemp, arqout);
+        setProxRRN(header, (getProxRRN(header)+1)); //atualiza o campo proxRRN da header
         deleteRecord(registrotemp);
     }
+
+    //atualizando os campos da header
     attCountersHeader(arqout, header);
-    changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
+    changeHeaderStatus(header);
     
-    fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
-    writeHeaderOnBin(header, arqout); //sobrescrevo a header antiga com os novos dados da header
+    fseek(arqout, 0, SEEK_SET); //volta pro começo do arquivo binário para poder escrever a header atualizada
+    writeHeaderOnBin(header, arqout);
     deleteHeader(header);
     
     fclose(arqin);
     fclose(arqout);
-    
     BinarioNaTela(arqsaida);
     return;
 }
 
-/*essa função vai imprimir os campos de cada registro do arquivo binário de entrada
-"arqentrada"
-Vamos ler um registro por vez e printá-lo*/
+/*essa função vai percorrer por todo o arquivo binário de entrada
+e imprimir todos os registros que não estão logicamente removidos
+caso o arquivo não tenha registros não removidos, avisamos*/
 void showRecords(char *arqentrada)
 {
-    char removido; //indica se o registro está removido ou não
+    int arqvazio = 1;
+    char removido;
     REGISTRO *registrotemp;
-    FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário a ser lido
-    if (arqin == NULL)
-    {
-        printf("Falha no processamento do arquivo.");
+
+    FILE *arqin = fopen(arqentrada, "rb");
+    if (arqin == NULL){
+        printf("Falha no processamento do arquivo.\n");
         return;
     }
-    fseek(arqin, 17, SEEK_SET); //ponteiro pula o cabeçalho, não será útil para a impressão dos registros
-    while (fread(&removido, 1, 1, arqin)) //fread serve para verificar se ainda há registros a serem lidos
-    {
-        registrotemp = recordFromBin(arqin, removido); //crio registro temporário com os dados retirados do arquivo binário
-        printRecord(registrotemp); //imprimo o registro se ele não tiver sido logicamente removido
+
+    fseek(arqin, 17, SEEK_SET); //pula o cabeçalho
+    while (fread(&removido, 1, 1, arqin)){
+        registrotemp = recordFromBin(arqin, removido);
+        printRecord(registrotemp);
         if (registrotemp != NULL)
         {
+            arqvazio = 0; //como tinha pelo menos um registro != NULL, o arquivo não está vazio
             deleteRecord(registrotemp);
         }
+    }
+    if (arqvazio == 1){ //arquivo não possui registros, informamos ao usuário
+        printf("Registro inexistente.\n");
     }
     fclose(arqin);
     return;
@@ -77,45 +83,46 @@ void showRecords(char *arqentrada)
 
 /*essa função vai receber como parametro um arquivo binário e vai fazer n buscas
 por campo e valor do campo no arquivo. vai imprimir os resultados compatíveis
-n equivale ao número de buscas diferentes que serão feitas*/
+n equivale ao número de buscas diferentes que serão feitas e m equivale a quantidade de
+campos que serão utilizados em cada busca
+caso nenhum registro atenda os critérios, informamos*/
 void filterRecords(char *arqentrada, int n)
 {
-    FILE *arqin = fopen(arqentrada, "rb"); //abertura do arquivo binário no qual será feita a busca
-    if (arqin == NULL)
-    {
+    FILE *arqin = fopen(arqentrada, "rb");
+    if (arqin == NULL){
         printf("Falha no processamento do arquivo.");
         return;
     }
+
     int m;
     REGISTRO *registrotemp;
     char removido;
-    for (int i = 0; i < n; i++)
-    {
-        int achoualgum = 0;
-        fseek(arqin, 17, SEEK_SET); //pulo o cabeçalho pra ir direto pro primeiro registro a cada busca
+
+    for (int i = 0; i < n; i++){
         scanf("%d", &m);
-        CRITERIOS *criterios[m];
-        readCriteria(m, criterios); //vetor de structs que vai armazenar cada um dos critérios de busca
-        
-        while(fread(&removido, sizeof(char), 1, arqin)) //verifica se o arquivo não acabou ainda
-        {   
-            registrotemp = recordFromBin(arqin, removido);//leio um registro 
-            if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criterios))//se o registro atender aos criterios de busca e não estiver logicamente removido ele é printado
-            {
-                printRecord(registrotemp);
-                achoualgum = 1; //achou algum portanto não será necessário imprimir aviso de que nenhum registro é compativel com a busca
-            }
-            if (registrotemp != NULL) //desaloco a memória alocada para o registro temporário
-            {
-                deleteRecord(registrotemp);
+        CRITERIOS *criterios[m];//vetor de structs que vai armazenar cada um dos critérios de busca
+        readCriteria(m, criterios); 
+
+        int achoualgum = 0;
+        fseek(arqin, 17, SEEK_SET);
+        while(fread(&removido, sizeof(char), 1, arqin)){   
+            registrotemp = recordFromBin(arqin, removido);
+            if (registrotemp != NULL){
+                if(recordMeetsCriteria(registrotemp, m, criterios)){ //verifica se o registro atende os criterios de busca
+                    printRecord(registrotemp);
+                    achoualgum = 1; //marcamos que pelo menos 1 registro compatível com a busca foi encontrado
+                }
+               deleteRecord(registrotemp);
             }
         }
-        for(int j = 0; j < m; j++)
-        {
+        if(achoualgum == 0){
+            printf("Registro inexistente.\n");
+        }
+        printf("\n");
+        
+        for(int j = 0; j < m; j++){
             deleteCriteria(criterios[j]);
         }
-        if(achoualgum == 0) printf("Registro inexistente.\n");
-        printf("\n");
     }
     fclose(arqin);
 }
@@ -133,8 +140,8 @@ void removeRecords(char *arqentrada, int n)  {
     HEADER *headertemp = headerFromBin(arqin); //vamos usar uma header temporaria para guardar as infos e adiciona-las ao header principal depois
     changeHeaderStatus(headertemp);
     int m;
-    char removido;
     REGISTRO *registrotemp;
+    char removido;
     for (int i=0; i< n; i++)
     {
         scanf("%d", &m);
@@ -162,6 +169,7 @@ void removeRecords(char *arqentrada, int n)  {
                 deleteRecord(registrotemp);
             }
         }
+
         for (int j = 0; j < m; j++) { 
             deleteCriteria(criteriosBusca[j]); 
         }
@@ -226,7 +234,6 @@ void insertRecords(char *arqentrada, int n) {
     return;
 }
 
-
 /*esta é uma função para atualizar um registro, caso ele exista segundo criterios definidos pelo usuario*/
 void updateRecords(char *arqentrada, int n) {
     FILE *arqin = fopen(arqentrada, "rb+"); //vamos abrir o arquivo em wb para ler e escrever
@@ -244,6 +251,7 @@ void updateRecords(char *arqentrada, int n) {
         scanf("%d", &m);
         CRITERIOS *criteriosBusca[m];
         readCriteria(m, criteriosBusca); 
+
         int atts; //numero de atualizacoes para aquela linha (o "p" no exemplo do pdf)
         scanf("%d", &atts);  
         CRITERIOS *criteriosAtt[m];
@@ -255,7 +263,7 @@ void updateRecords(char *arqentrada, int n) {
             //int byteOffSetRegistro = ftell(arqin); //vamos guardar este byte offset para caso este seja o registro que atualizaremos
             registrotemp = recordFromBin(arqin, removido); //guardaremos o registro lido em registrotemp (que sera usado para ver se os criterios batem)
             if (registrotemp != NULL && recordMeetsCriteria(registrotemp, m, criteriosBusca)) { //verificamos se o registro bate com o criterio imposto pelo usuario
-                atualizarCamposRegistro(registrotemp, atts, criteriosAtt); //usamos essa funcao para armazenar as atualizações no registrotemp
+                attRecords(registrotemp, atts, criteriosAtt); //usamos essa funcao para armazenar as atualizações no registrotemp
                 fseek(arqin, -80, SEEK_CUR); //vamos mover o curso para o byte offset do registro a ser atualizado
                 writeRecordOnBin(registrotemp, arqin); //escrevemos o registro atualizado ali
             }
@@ -264,11 +272,12 @@ void updateRecords(char *arqentrada, int n) {
                 deleteRecord(registrotemp);
             }
         }
-        for (int j = 0; j < m; j++) { //vamos liberar a memoria dos criterios antes da proxima volta do loop
-            deleteCriteria(criteriosBusca[j]); 
-        }
         for (int j = 0; j < atts; j++) {
             deleteCriteria(criteriosAtt[j]);
+        }
+
+        for (int j = 0; j < m; j++) { //vamos liberar a memoria dos criterios antes da proxima volta do loop
+            deleteCriteria(criteriosBusca[j]); 
         }
     }
     fclose(arqin);

@@ -324,118 +324,91 @@ int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
 {
     for (int i = 0; i < m; i++) //m é a quantidade de critérios impostos na busca
     {
-        if (strcmp(criterios[i]->nomecampo, "codEstacao") == 0)
-        {
-            if(registro->codestacao != atoi(criterios[i]->valorcampo)) //"valorcampo" é sempre lido como string. se o campo em questão for um inteiro, deve ser feita a conversão usando o atoi
-            {
+        if (strcmp(criterios[i]->nomecampo, "codEstacao") == 0){
+            if(registro->codestacao != atoi(criterios[i]->valorcampo)){ //"valorcampo" é sempre lido como string. se o campo em questão for um inteiro, deve ser feita a conversão usando o atoi
                 return 0;
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "codLinha") == 0)
-        {
-            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
-            {
-                if(registro->codlinha != -1)
-                {
+
+        if (strcmp(criterios[i]->nomecampo, "codLinha") == 0){
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0){
+                if(registro->codlinha != -1){
                     return 0;
                 }
             }
-            else
-            {
-                if(registro->codlinha != atoi(criterios[i]->valorcampo))
-                {
+            else{
+                if(registro->codlinha != atoi(criterios[i]->valorcampo)){
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "codProxEstacao") == 0)
-        {
-            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
-            {
-                if(registro->codproxestacao != -1)
-                {
+
+        if (strcmp(criterios[i]->nomecampo, "codProxEstacao") == 0){
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0){
+                if(registro->codproxestacao != -1){
                     return 0;
                 }
             }
-            else
-            {
-                if(registro->codproxestacao != atoi(criterios[i]->valorcampo))
-                {
+            else{
+                if(registro->codproxestacao != atoi(criterios[i]->valorcampo)){
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "distProxEstacao") == 0)
-        {
-            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
-            {
-                if(registro->distproxestacao != -1)
-                {
+        
+        if (strcmp(criterios[i]->nomecampo, "distProxEstacao") == 0){
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0){
+                if(registro->distproxestacao != -1){
                     return 0;
                 }
             }
-            else
-            {
-                if(registro->distproxestacao != atoi(criterios[i]->valorcampo))
-                {
+            else{
+                if(registro->distproxestacao != atoi(criterios[i]->valorcampo)){
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "codLinhaIntegra") == 0)
-        {
-            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
-            {
-                if(registro->codlinhaintegra != -1)
-                {
+
+        if (strcmp(criterios[i]->nomecampo, "codLinhaIntegra") == 0){
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0){
+                if(registro->codlinhaintegra != -1){
                     return 0;
                 }
             }
-            else
-            {
-                if(registro->codlinhaintegra != atoi(criterios[i]->valorcampo))
-                {
+            else{
+                if(registro->codlinhaintegra != atoi(criterios[i]->valorcampo)){
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "codEstIntegra") == 0)
-        {
-            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
-            {
-                if(registro->codestintegra != -1)
-                {
+
+        if (strcmp(criterios[i]->nomecampo, "codEstIntegra") == 0){
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0){
+                if(registro->codestintegra != -1){
                     return 0;
                 }
             }
-            else
-            {
-                if(registro->codestintegra != atoi(criterios[i]->valorcampo))
-                {
+            else{
+                if(registro->codestintegra != atoi(criterios[i]->valorcampo)){
                     return 0;
                 }
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "nomeEstacao") == 0)
-        {
-            if(strcmp(registro->nomeestacao,criterios[i]->valorcampo) != 0)
-            {
+
+        if (strcmp(criterios[i]->nomecampo, "nomeEstacao") == 0){
+            if(strcmp(registro->nomeestacao,criterios[i]->valorcampo) != 0){
                 return 0;
             }
         }
-        if (strcmp(criterios[i]->nomecampo, "nomeLinha") == 0)
-        {
-            if(strcmp(criterios[i]->valorcampo, "NULO") == 0)
-            {
-                if(registro->tamnomelinha != 0)
-                {
+        
+        if (strcmp(criterios[i]->nomecampo, "nomeLinha") == 0){
+            if(strcmp(criterios[i]->valorcampo, "NULO") == 0){
+                if(registro->tamnomelinha != 0){
                     return 0;
                 }
             }
-            else
-            {
-                if(strcmp(registro->nomelinha, criterios[i]->valorcampo) != 0)
-                {
+            else{
+                if(strcmp(registro->nomelinha, criterios[i]->valorcampo) != 0){
                     return 0;
                 }
             }
@@ -494,7 +467,8 @@ void removeRecord(REGISTRO *registro) {
     registro->removido = '1';
 }
 
-void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //funcao que pega as atualizacoes (criteriosAtt) e escreve no registro
+//função para atualizar um registro com base nos critérios inseridos pelo usuário
+void attRecords(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //funcao que pega as atualizacoes (criteriosAtt) e escreve no registro
     for (int i = 0; i < atts; i++) { //esse loop deve se repetir para cada atualizacao de campo que vamos fazer
         char *campo = criteriosAtt[i]->nomecampo; //guardaremos aqui qual o nome do campo
         char *valor = criteriosAtt[i]->valorcampo; //e aqui o valor armazenado nesse campo
@@ -579,6 +553,7 @@ void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criterios
     }
 }
 
+//atualiza os campos nroEstacoes e nroParesEstacao da header
 void attCountersHeader(FILE *arqin, HEADER* header)
 {
     char **listanomes = (char **)malloc(getProxRRN(header) * sizeof(char *));
@@ -612,11 +587,11 @@ void attCountersHeader(FILE *arqin, HEADER* header)
             }
             
             int existepar = 0; //agora devemos contar os pares, seguindo a mesma logica
-            if (registro->codestacao != -1 && registro->codproxestacao != -1) 
+            if (registro->codproxestacao != -1) 
             {
                 for (int i = 0; i < contapares; i++)
                 {
-                    if (((registro->codestacao == listaestacao[i] && registro->codproxestacao == listaprox[i]) || (registro->codestacao == listaprox[i] && registro->codproxestacao == listaestacao[i])) && registro->codproxestacao != -1) //se tivermos um par
+                    if (((registro->codestacao == listaestacao[i] && registro->codproxestacao == listaprox[i]) || (registro->codestacao == listaprox[i] && registro->codproxestacao == listaestacao[i]))) //se tivermos um par
                     { 
                         existepar = 1;
                         break;
@@ -646,4 +621,3 @@ void attCountersHeader(FILE *arqin, HEADER* header)
     free(listaprox);
     listaprox = NULL;
 }
-
