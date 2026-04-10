@@ -3,6 +3,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+    #include "header.h"
     
     typedef struct registro_ REGISTRO;
     typedef struct criterios_ CRITERIOS;
@@ -34,6 +35,6 @@
     void removeRecord(REGISTRO *registro); //função para marcar um registro como logicamente removido
     
     void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt); //funcao que pega as atualizacoes e escreve no registro
-    void contarEstacoesEPares(FILE *arqin, int *nroEst, int *nroPares); //funcao para percorrar o arquivo e contar o nroEstacoes e nroParesEstacao
+    void attCountersHeader(FILE *arqin, HEADER *header); //funcao para percorrar o arquivo e contar o nroEstacoes e nroParesEstacao
 
     #endif

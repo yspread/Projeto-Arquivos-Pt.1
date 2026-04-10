@@ -11,13 +11,8 @@ e escreverá o cabeçalho e todos os registros de modo binário no arquivo "arqs
 Para isso, vamos ler e escrever um registro por vez
 Inicialmente um cabeçalho placeholder será escrito no binário mas posteriormente ele será
 substituido por outro com os dados finais e corretos*/
-void readRecords(char *arqentrada, char *arqsaida){
-    char *listanomesestacoes[10000]; //vai armazenar os nomes de estacoes que ja foram registrados, a fim de não contar os repetidos
-    int contanomes = 0; //conta quantos nomes diferentes tem na lista   
-    char *nomeestacaotemp; //armazenará temporariamente o nome da estacao de um registro
-    int listacodestacoes[10000], listacodproxestacoes[10000]; //lista vai armazenar os pares de codEstacao e codProxEstacao diferentes
-    int contapares = 0; //conta quantos pares codEstacao, codProxEstaco diferentes tem na lista
-    int codestacaotemp, codproxestacaotemp;; //armazenarao temporariamente o codigo da estacao e o codigo da proxima estacao de um registro
+void readRecords(char *arqentrada, char *arqsaida)
+{
     HEADER *header = createHeader(); //crio uma header que será preenchida conforme os registros são lidos
     REGISTRO *registrotemp; //esse registro temporário armazenará o registro que vai ser escrito no binário
     char buffer[512]; //armazenará a linha que foi lida do csv
@@ -37,68 +32,10 @@ void readRecords(char *arqentrada, char *arqsaida){
         registrotemp = recordFromCSV(buffer); //crio registro temporário com os valores presentes na linha
         writeRecordOnBin(registrotemp, arqout); //escrevo os 80 bytes do registro no arquivo binário
         setProxRRN(header, (getProxRRN(header)+1));
-        /*descubro se o nome da estacao do registro atual é novo, se for, atualizo header->nroEstacoes, contando + 1*/
-        nomeestacaotemp = getNomeEstacao(registrotemp);
-        if (contanomes == 0) 
-        {
-            listanomesestacoes[contanomes] = strdup(nomeestacaotemp);
-            contanomes++;
-        }
-        else
-        {   
-            for(int i = 0; i < contanomes; i++)
-            {   
-                if(strcmp(listanomesestacoes[i], nomeestacaotemp) == 0) //se eu achar algum nome igual na lista, nao conto como nome novo de estacao
-                {
-                    break;
-                }
-                if(i == (contanomes - 1)) //se chegou no final da lista e não achou nenhum nome igual, eu conto++ e adiciono o novo nome na lista
-                {
-                    listanomesestacoes[contanomes] = strdup(nomeestacaotemp);
-                    contanomes++;
-                }
-            }
-        }
-        /*faço a mesma coisa que com o numero de com o nome da estacao, so que agora com o par (codEstacao, codProxEstacao)
-        se for um par novo, conto + 1 em header->nroParesEstacao*/
-        codestacaotemp = getCodEstacao(registrotemp);
-        codproxestacaotemp = getCodProxEstacao(registrotemp);
-        if (contapares == 0 && codproxestacaotemp != -1) //essa estação não pode ser terminal para ser contada como par
-        {
-            listacodestacoes[contapares] = codestacaotemp;
-            listacodproxestacoes[contapares] = codproxestacaotemp;
-            contapares++;
-        }
-        else
-        {
-            for(int i = 0; i < contapares; i++)
-            {
-                if(codproxestacaotemp == -1 || ((listacodestacoes[i] == codestacaotemp && listacodproxestacoes[i] == codproxestacaotemp) || listacodestacoes[i] == codproxestacaotemp && listacodproxestacoes[i] == codestacaotemp)) //se eu achar um par igual na lista, nao conto como par (estações terminais são desconsideradas)
-                {
-                    break;
-                }
-                if (i == (contapares - 1)) //se chegou no final da lista e não achou nenhum par igual, conto++ e adiciono o par nas respectivas listas
-                {
-                    listacodestacoes[contapares] = codestacaotemp;
-                    listacodproxestacoes[contapares] = codproxestacaotemp;
-                    contapares++;
-                }
-            }
-        }
         deleteRecord(registrotemp);
     }
-    if (contanomes != 0)
-    {
-        for(int i = 0; i < contanomes; i++)
-        {
-            free(listanomesestacoes[i]); //libero a memória alocada as strings pela função strdup
-            listanomesestacoes[i] = NULL;
-        }
-    }
-    
+    attCountersHeader(arqout, header);
     changeHeaderStatus(header); //o arquivo será fechado, devo indicar isso com status = 1
-    setNroEstacoes(header, contanomes); //atualizo o valor de header->nroEstacoes
-    setNroParesEstacao(header, contapares); //atualizo o valor de header->nroParesEstacao
     
     fseek(arqout, 0, SEEK_SET); //coloco o ponteiro no inicio do arquivo
     writeHeaderOnBin(header, arqout); //sobrescrevo a header antiga com os novos dados da header
@@ -230,9 +167,7 @@ void removeRecords(char *arqentrada, int n)  {
         }
     }
     int nroEstacoes, nroPares;
-    contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
-    setNroEstacoes(headertemp, nroEstacoes); //colocamos o novo numero de estações na headertemp
-    setNroParesEstacao(headertemp, nroPares); //o mesmo para o numero de pares de estacao
+    attCountersHeader(arqin, headertemp); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
     changeHeaderStatus(headertemp);
     fseek(arqin, 0, SEEK_SET); //hora de atualizar a header principal 
     writeHeaderOnBin(headertemp, arqin); //escrevemos a header temporaria na header principal
@@ -280,9 +215,7 @@ void insertRecords(char *arqentrada, int n) {
     }
     int nroEstacoes, nroPares;
     fseek(arqin, 17, SEEK_SET);
-    contarEstacoesEPares(arqin, &nroEstacoes, &nroPares); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
-    setNroEstacoes(header, nroEstacoes); //colocamos o novo numero de estações na headertemp
-    setNroParesEstacao(header, nroPares); //o mesmo para o numero de pares de estacao
+    attCountersHeader(arqin, header); //agora vamos recontar quantas estações unicas e pares de estações únicos nós temos
     changeHeaderStatus(header);
     fseek(arqin, 0, SEEK_SET); //hora de atualizar a header principal 
     writeHeaderOnBin(header, arqin); //escrevemos a header temporaria na header principal

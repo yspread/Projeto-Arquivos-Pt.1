@@ -3,6 +3,7 @@
 #include <string.h>
 #include "registros.h"
 #include "fornecidas.h"
+#include "header.h"
 
 typedef struct registro_{
     //campos de tamanho fixo
@@ -578,12 +579,14 @@ void atualizarCamposRegistro(REGISTRO *registro, int atts, CRITERIOS **criterios
     }
 }
 
-void contarEstacoesEPares(FILE *arqin, int *nroestacoes, int *nroparesestacao)
+void attCountersHeader(FILE *arqin, HEADER* header)
 {
-    char *listanomes[10000];
+    char **listanomes = (char **)malloc(getProxRRN(header) * sizeof(char *));
     int contanomes = 0; //esta variável vai guardar quantos nomes unicos ja encontramos
-    int listaestacao[10000], listaprox[10000]; //vamos guardar aqui os codestacao e os codproxestacao
+    int *listaestacao = (int *)malloc(getProxRRN(header) * sizeof(int));
+    int *listaprox = (int *)malloc(getProxRRN(header) * sizeof(int)); //vamos guardar aqui os codestacao e os codproxestacao
     int contapares = 0;
+    
     fseek(arqin, 17, SEEK_SET); //vamos começar a leitura após o cabeçalho 
     
     char removido;
@@ -629,11 +632,18 @@ void contarEstacoesEPares(FILE *arqin, int *nroestacoes, int *nroparesestacao)
             deleteRecord(registro); 
         }
     }
-    *nroestacoes = contanomes; //o nroestacoes vai guardar o numero de nomes unicos
-    *nroparesestacao = contapares; //o mesmo para o nroparesestacao
+    setNroEstacoes(header, contanomes); //o nroestacoes vai guardar o numero de nomes unicos
+    setNroParesEstacao(header, contapares); //o mesmo para o nroparesestacao
+    
     for (int i = 0; i < contanomes; i++)  //liberamos o espaço na listanomes
     {
-            free(listanomes[i]);
+        free(listanomes[i]);
     }
+    free(listanomes);
+    listanomes = NULL;
+    free(listaestacao);
+    listaestacao = NULL;
+    free(listaprox);
+    listaprox = NULL;
 }
 
