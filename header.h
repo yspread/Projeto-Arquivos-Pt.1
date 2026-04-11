@@ -9,18 +9,19 @@
     void deleteHeader(HEADER *header); //função para apagar o cabeçalho da memória
     HEADER *headerFromBin(FILE *arqbin); //função para ler a header de um arquivo binário
     void writeHeaderOnBin(HEADER *header, FILE *arqbin); //escreve os dados do cabeçalho em um arquivo binário
+    void attHeaderOnFile(HEADER *header, FILE *arqbin); //atualiza os campos da header e a escreve no arquivo binário
 
     //funções para alterar valores de campos da header
-    void changeHeaderStatus(HEADER *header); //troca de 0 pra 1 ou de 1 pra 0 o campo status da header
-    void setTopo(HEADER *header, int novotopo); //atualiza o valor do topo
-    void setProxRRN(HEADER *header, int novoRRN); //atualiza o valor do campo proxRRN da header
-    void setNroEstacoes(HEADER *header, int novovalor); //atualiza o valor do campo nroEstacoes da header;
-    void setNroParesEstacao(HEADER *header, int novovalor); //atualiza o valor do campo nroParesEstacao da header
+    void setStatus(HEADER *header, char novostatus);
+    void setTopo(HEADER *header, int novotopo);
+    void setProxRRN(HEADER *header, int novoRRN);
+    void setNroEstacoes(HEADER *header, int novovalor);
+    void setNroParesEstacao(HEADER *header, int novovalor); 
 
     //funções para se acessar campos da header
-    char getStatus(HEADER *header); //retorna header->status
-    int getTopo(HEADER *header); //retorna o topo da pilha de arquivos logicamente removidos(header->topo)
-    int getProxRRN(HEADER *header); //retorna o valor de header->proxRRN
-    int getNroEstacoes(HEADER *header); //retorna o valor de header->nroestacoes
-    int getNroParesEstacao(HEADER *header); //retorna o valor header->nroparesestacoes
+    char getStatus(HEADER *header); 
+    int getTopo(HEADER *header);
+    int getProxRRN(HEADER *header);
+    int getNroEstacoes(HEADER *header);
+    int getNroParesEstacao(HEADER *header);
 #endif

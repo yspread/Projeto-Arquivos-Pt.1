@@ -15,7 +15,6 @@
     REGISTRO *recordFromBin(FILE *arqbin, char removido); //le um registro de um arquivo binário. se removido valer 1, a função retorna NULL
     REGISTRO *recordFromInput(); //cria um registro com dados informados pelo usuário
     
-    //funções
     void writeRecordOnBin(REGISTRO *registro, FILE *fp); //escreve todo o conteúdo do registro no arquivo binário e coloca o lixo pra completar os 80 bytes
     void printRecord(REGISTRO *registro); //função para imprimir os dados de um registro
     int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios); //verifica se um registro atende critérios de busca

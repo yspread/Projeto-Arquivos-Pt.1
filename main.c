@@ -16,7 +16,7 @@ int main()
     {
         case 1: //create table
             char arquivosaida[100];
-            scanf("%s", arquivosaida); //nome do arquivo binário no qual será escrito pela função deve ser dado pelo usuário
+            scanf("%s", arquivosaida); //nome do arquivo que será criado
             readRecords(arquivoentrada, arquivosaida);
             break;
         case 2: //mostrar registros

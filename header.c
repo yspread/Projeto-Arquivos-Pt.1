@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "header.h"
+#include "registros.h"
 
 typedef struct header_{
     char status;
@@ -32,7 +33,7 @@ void deleteHeader(HEADER *header)
     header = NULL;
 }
 
-//função para se criar um header e inicializar seus dados com base num header lido de um registro
+//função para se criar um header e inicializar seus dados com base em um header lido de um registro
 HEADER *headerFromBin(FILE *arqbin)
 {
     HEADER *header;
@@ -44,6 +45,8 @@ HEADER *headerFromBin(FILE *arqbin)
     fread(&nroestacoes, sizeof(int), 1, arqbin);
     fread(&nroparesestacao, sizeof(int), 1, arqbin);
     header = createHeader();
+    //todos os campos da header sao atualizados com os valores lidos do arquivo
+    setStatus(header, status);
     setTopo(header, topo);
     setProxRRN(header, proxRRN);
     setNroEstacoes(header, nroestacoes);
@@ -66,21 +69,26 @@ void writeHeaderOnBin(HEADER *header, FILE *arqbin)
     fwrite(&nroParesEstacao, sizeof(int), 1, arqbin);
 }
 
-//muda o status do arquivo
-void changeHeaderStatus(HEADER *header)
+//faz as atualizações dos campos da header, escreve no arquivo e libera a memória da header
+void attHeaderOnFile(HEADER *header, FILE *arqbin)
 {
-    if (header == NULL)
+    //atualização dos campos da header  
+    attCountersHeader(arqbin, header);
+    setStatus(header, '1');
+
+    //escrita no arquivo
+    fseek(arqbin, 0, SEEK_SET); 
+    writeHeaderOnBin(header, arqbin);
+    deleteHeader(header);
+}
+
+//atualiza o campo status da header
+void setStatus(HEADER *header, char novostatus)
+{
+    if (header != NULL)
     {
-        return;
-    }
-    if (header->status == '1') //se o status for 1, muda pra 0
-    {
-        header->status = '0';
-    }
-    else //se o status for 0, muda pra 1
-    {
-        header->status = '1';
-    }
+        header->status = novostatus;
+    } 
 }
 
 //atualiza o valor do campo topo da header

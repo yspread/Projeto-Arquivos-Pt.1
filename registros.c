@@ -100,7 +100,7 @@ void readCriteria(int m, CRITERIOS **criterios)
     char nomecampo[30], valorcampo[30]; 
     for (int j = 0; j < m; j++)
     {
-        scanf("%s", nomecampo); //vamos ler o nome do campo que vamos atualizar
+        scanf("%s", nomecampo); //leitura do campo a ser buscado/atualizado
         if (strcmp(nomecampo, "nomeEstacao") == 0 || strcmp(nomecampo, "nomeLinha") == 0){ //se esse campo for nomeEstacao ou nomeLinha, ele esta entre aspas
             ScanQuoteString(valorcampo);
         }
@@ -114,11 +114,11 @@ void readCriteria(int m, CRITERIOS **criterios)
 //essa função pega uma linha do csv, separa em tokens e utiliza esses tokens pra criar um registro, direcionando os tokens para os campos do registro correspondentes
 REGISTRO *recordFromCSV(char *buffer)
 {
-    int codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra;  //todos os tokens que serão obtidos com o strsep
-    char *nomeestacao, *nomelinha, *tokenTemp;                                          //e serão utilizados na criação de um registro
+    int codestacao, codlinha, codproxest, distproxest, codlinhaintegra, codestintegra;
+    char *nomeestacao, *nomelinha, *tokenTemp;                                        
     buffer[strcspn(buffer, "\r\n")] = '\0'; //limpa possíveis \r e \n que possam ter sido lidos
     //tokenização de acordo com a ordem dos campos no arquivo csv
-    codestacao = atoi(strsep(&buffer, ",")); //esse valor não pode ser nulo
+    codestacao = atoi(strsep(&buffer, ","));
     nomeestacao = strsep(&buffer, ",");
     tokenTemp = strsep(&buffer, ",");
     if (tokenTemp[0] != '\0') //caso o strsep se depare com 2 vírgulas consecutivas (oq significa um espaço nulo), ele retorna uma string "\0" 
