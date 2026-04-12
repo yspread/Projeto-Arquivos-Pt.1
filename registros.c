@@ -28,7 +28,7 @@ typedef struct criterios_{
     char *valorcampo;
 }CRITERIOS;
 
-//todos os parâmetros serão retirados do arquivo de entrada para se criar um registro
+//recebe como parâmetros o valor dos campos do registro. Eles serão usados para se criar uma struct registro alocada dinamicamente na memória
 REGISTRO *createRecord(int codestacao, int codlinha, int codproxestacao, int distproxestacao, int codlinhaintegra, int codestintegra, char* nomeestacao, char *nomelinha)
 {
     REGISTRO *registro = (REGISTRO *)malloc(sizeof(REGISTRO)); //memória alocada dinamicamente para o registro
@@ -94,7 +94,7 @@ void deleteCriteria(CRITERIOS *criterios)
     criterios = NULL;
 }
 
-//função que le todos os critérios de uma busca e devolve o array de structs
+//função que preenche o vetor que contém os m critérios de buscas
 void readCriteria(int m, CRITERIOS **criterios)
 {
     char nomecampo[30], valorcampo[30]; 
@@ -319,7 +319,7 @@ void printRecord(REGISTRO *registro)
     else printf("%d\n", registro->codestintegra);
 }
 
-//função para verificar se um registro cumpre os critérios de uma busca
+//função para verificar se um registro cumpre os m critérios de uma busca
 int recordMeetsCriteria(REGISTRO *registro, int m, CRITERIOS **criterios)
 {
     for (int i = 0; i < m; i++) //m é a quantidade de critérios impostos na busca
@@ -468,24 +468,19 @@ void removeRecord(REGISTRO *registro) {
 }
 
 //função para atualizar um registro com base nos critérios inseridos pelo usuário
-void attRecords(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //funcao que pega as atualizacoes (criteriosAtt) e escreve no registro
-    for (int i = 0; i < atts; i++) { //esse loop deve se repetir para cada atualizacao de campo que vamos fazer
-        char *campo = criteriosAtt[i]->nomecampo; //guardaremos aqui qual o nome do campo
-        char *valor = criteriosAtt[i]->valorcampo; //e aqui o valor armazenado nesse campo
+//atts equivale ao numero de atualizações de registros que serão feitas
+void attRecords(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) {
+    for (int i = 0; i < atts; i++) {
+        char *campo = criteriosAtt[i]->nomecampo;
+        char *valor = criteriosAtt[i]->valorcampo;
 
-        if (strcmp(campo, "nomeEstacao") == 0) { //devemos tratar do caso especial em que o campo em questao seja o nomeestacao, pois é uma string de tamanho variavel, nao basta apenas substituir o que ha li
-            if (registro->nomeestacao != NULL) { //como essa string de tamanho variavel usa alocacao dinamica, liberamos esse espaço ocupado
+        if (strcmp(campo, "nomeEstacao") == 0) {
+            if (registro->nomeestacao != NULL) { //liberamos o espaço ocupado pelo atual nomeEstação do registro
                 free(registro->nomeestacao);
             }
-            
-            if (strcmp(valor, "NULO") == 0) { //se tivermos que ocupar esse campo com NULO, nao deve haver nada ali e seu tamanho sera 0
-                registro->tamnomeestacao = 0;
-                registro->nomeestacao = NULL;
-            } else { //para qualquer outro caso, apenas atualizamos o valor do campo e seu tamanho
-                registro->tamnomeestacao = strlen(valor);
-                registro->nomeestacao = malloc((registro->tamnomeestacao + 1) * sizeof(char));
-                strcpy(registro->nomeestacao, valor);
-            }
+            registro->tamnomeestacao = strlen(valor); //alocamos a memória para o novo nomeEstação
+            registro->nomeestacao = malloc((registro->tamnomeestacao + 1) * sizeof(char));
+            strcpy(registro->nomeestacao, valor);
         } 
         else if (strcmp(campo, "nomeLinha") == 0) { //a mesma logica do nomeestacao se aplica ao nomelinha
             if (registro->nomelinha != NULL) {
@@ -494,21 +489,20 @@ void attRecords(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //func
             
             if (strcmp(valor, "NULO") == 0) {
                 registro->tamnomelinha = 0;
-                registro->nomelinha = NULL;
+                strcpy(registro->nomelinha, "\0");
             } else {
                 registro->tamnomelinha = strlen(valor);
                 registro->nomelinha = malloc((registro->tamnomelinha + 1) * sizeof(char));
                 strcpy(registro->nomelinha, valor);
             }
         }
-        else if (strcmp(campo, "codEstacao") == 0) { //ja para o caso de quaisquer outros campos, usamos apenas a logica de substituicao
-            if (strcmp(valor, "NULO") == 0) {//nesses registros, se o valor a ser inserido (na atualizacao) for NULO, inserimos -1
+        else if (strcmp(campo, "codEstacao") == 0) {
+            if (strcmp(valor, "NULO") == 0) { //se o valor a ser inserido for NULO, devemos considerar o campo como -1
                 registro->codestacao = -1;
             }
-            else {          //se nao, inserimos o valor em int (atoi)
-                registro->codestacao = atoi(valor);
+            else {         
+                registro->codestacao = atoi(valor); //conversão da string para int com atoi
             }
-        
         } 
         else if (strcmp(campo, "codLinha") == 0) {
              if (strcmp(valor, "NULO") == 0) {
@@ -553,22 +547,24 @@ void attRecords(REGISTRO *registro, int atts, CRITERIOS **criteriosAtt) { //func
     }
 }
 
-//atualiza os campos nroEstacoes e nroParesEstacao da header
+//atualiza os campos nroEstacoes e nroParesEstacao da header, com base nos dados salvos no arquivos
 void attCountersHeader(FILE *arqin, HEADER* header)
 {
+    //realizamos o malloc com o valor de getProxRRN pois o valor de registros (e portanto de nomes/pares diferentes)
+    //nunca será maior que esse valor
     char **listanomes = (char **)malloc(getProxRRN(header) * sizeof(char *));
     int contanomes = 0; //esta variável vai guardar quantos nomes unicos ja encontramos
     int *listaestacao = (int *)malloc(getProxRRN(header) * sizeof(int));
-    int *listaprox = (int *)malloc(getProxRRN(header) * sizeof(int)); //vamos guardar aqui os codestacao e os codproxestacao
+    int *listaprox = (int *)malloc(getProxRRN(header) * sizeof(int));
     int contapares = 0;
     
     fseek(arqin, 17, SEEK_SET); //vamos começar a leitura após o cabeçalho 
     
     char removido;
-    while (fread(&removido, sizeof(char), 1, arqin))  //só paramos se chegarmos ao fim do arquivo
+    while (fread(&removido, sizeof(char), 1, arqin)) 
     {  
-        REGISTRO *registro = recordFromBin(arqin, removido); //vamos guardar o registro em "registro"
-        if (registro != NULL)  //como o recordFromBin devolve NULL para registros com status removidos, devemos ver se o registro não foi removido
+        REGISTRO *registro = recordFromBin(arqin, removido);
+        if (registro != NULL)
         {
             int existenome = 0;    //começamos assumindo que ainda nao vimos o nome
             for (int i = 0; i < contanomes; i++) 
@@ -587,11 +583,11 @@ void attCountersHeader(FILE *arqin, HEADER* header)
             }
             
             int existepar = 0; //agora devemos contar os pares, seguindo a mesma logica
-            if (registro->codproxestacao != -1) 
+            if (registro->codproxestacao != -1) //para ser um par, codproxestacao não pode ser NULO
             {
                 for (int i = 0; i < contapares; i++)
                 {
-                    if (((registro->codestacao == listaestacao[i] && registro->codproxestacao == listaprox[i]) || (registro->codestacao == listaprox[i] && registro->codproxestacao == listaestacao[i]))) //se tivermos um par
+                    if (((registro->codestacao == listaestacao[i] && registro->codproxestacao == listaprox[i]) || (registro->codestacao == listaprox[i] && registro->codproxestacao == listaestacao[i])))
                     { 
                         existepar = 1;
                         break;
@@ -607,10 +603,12 @@ void attCountersHeader(FILE *arqin, HEADER* header)
             deleteRecord(registro); 
         }
     }
-    setNroEstacoes(header, contanomes); //o nroestacoes vai guardar o numero de nomes unicos
-    setNroParesEstacao(header, contapares); //o mesmo para o nroparesestacao
+    //atualizamos a header com os valores dos contadores
+    setNroEstacoes(header, contanomes);
+    setNroParesEstacao(header, contapares);
     
-    for (int i = 0; i < contanomes; i++)  //liberamos o espaço na listanomes
+    //liberamos toda a memória alocada
+    for (int i = 0; i < contanomes; i++)
     {
         free(listanomes[i]);
     }
@@ -620,4 +618,5 @@ void attCountersHeader(FILE *arqin, HEADER* header)
     listaestacao = NULL;
     free(listaprox);
     listaprox = NULL;
+    return;
 }
